@@ -1,22 +1,35 @@
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 #include "vlasova_a_elem_matrix_sum/mpi/include/ops_mpi.hpp"
 #include "vlasova_a_elem_matrix_sum/seq/include/ops_seq.hpp"
 #include "util/include/perf_test_util.hpp"
 
-namespace vlasova_a_elem_matrix_sum{
+namespace vlasova_a_elem_matrix_sum {
 
 class ExampleRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kCount_ = 100;
+  const int kMatrixSize_ = 100;
   InType input_data_{};
+  OutType expected_result_{};
 
   void SetUp() override {
-    input_data_ = kCount_;
+    input_data_.resize(kMatrixSize_, std::vector<int>(kMatrixSize_, 1));
+    expected_result_.resize(kMatrixSize_, kMatrixSize_);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return input_data_ == output_data;
+    if (output_data.size() != expected_result_.size()) {
+      return false;
+    }
+    
+    for (size_t i = 0; i < output_data.size(); ++i) {
+      if (output_data[i] != expected_result_[i]) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   InType GetTestInputData() final {

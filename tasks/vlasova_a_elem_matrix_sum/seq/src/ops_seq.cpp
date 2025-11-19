@@ -24,16 +24,13 @@ bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
 }
 
 bool VlasovaAElemMatrixSumSEQ::RunImpl() {
-const std::vector<std::vector<int>> &matrix = GetInput();
-  std::vector<int> &result = GetOutput();
-  for (size_t i = 0; i < matrix.size(); ++i) {
+  for (int i = 0; i < GetInput().size(); ++i) {
     int row_sum = 0;
-    for (size_t j = 0; j < matrix[i].size(); ++j) {
-      row_sum += matrix[i][j];
+    for (int j = 0; j < GetInput()[i].size(); ++j) {
+      row_sum += GetInput()[i][j];
     }
-    result[i] = row_sum;
+    GetOutput()[i] = row_sum;
   }
-  
   return true;
 }
 

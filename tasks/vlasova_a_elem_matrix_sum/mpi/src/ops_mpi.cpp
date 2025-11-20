@@ -27,47 +27,45 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int count = GetInput().size();
-  int rows_per_process = count/size;
-  int remainder = count % size;
+  int total_rows = GetInput().size();
 
+  int rows_per_process = total_rows / size;
+  int remainder = total_rows % size;
+  
   int start = rank * rows_per_process + std::min(rank, remainder);
   int end = start + rows_per_process + (rank < remainder ? 1 : 0);
+  int local_size = end - start;
 
-  for (int i = start; i < end; i++){
+  std::vector<int> local_results(local_size);
+  for (int i = start; i < end; i++) {
     int row_sum = 0;
-    for (int j = 0; j < GetInput()[i].size(); ++j){
-      row_sum += GetInput()[i][j];
+    const auto& row = GetInput()[i];
+    for (int val : row) {
+      row_sum += val;
     }
-    GetOutput()[i] = row_sum;
+    local_results[i - start] = row_sum;
   }
 
-  if (rank == 0){
-    for (int proc = 1; proc < size; proc++){
-      int p_start = proc * rows_per_process + std::min(proc, remainder);
-      int p_end = p_start + rows_per_process + (proc < remainder ? 1 : 0);
-      
-      std::vector<int> p_res(p_end - p_start);
-      MPI_Recv(p_res.data(), p_res.size(), MPI_INT, proc, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      for (int i = 0; i< p_res.size(); ++i){
-        GetOutput()[p_start+i] = p_res[i];
-      }
-    }
+  std::vector<int> recv_counts(size);
+  std::vector<int> displs(size);
+  
+  int current_displ = 0;
+  for (int proc = 0; proc < size; proc++) {
+    int proc_start = proc * rows_per_process + std::min(proc, remainder);
+    int proc_end = proc_start + rows_per_process + (proc < remainder ? 1 : 0);
+    recv_counts[proc] = proc_end - proc_start;
+    displs[proc] = current_displ; 
+    current_displ += recv_counts[proc];
   }
-  else{
-    std::vector<int> cur_res(end - start);
-    for (int i = 0; i < cur_res.size(); ++i){
-      cur_res[i] = GetOutput()[start + i];
-    }
 
-    MPI_Send(cur_res.data(), cur_res.size(), MPI_INT, 0, 0, MPI_COMM_WORLD); 
-  }
+  MPI_Allgatherv(local_results.data(), local_size, MPI_INT,
+                 GetOutput().data(), recv_counts.data(), displs.data(), MPI_INT,
+                 MPI_COMM_WORLD);
 
   return true;
 }
 
-bool VlasovaAElemMatrixSumMPI::PostProcessingImpl(){
+bool VlasovaAElemMatrixSumMPI::PostProcessingImpl() {
   return !GetOutput().empty();
 }
 

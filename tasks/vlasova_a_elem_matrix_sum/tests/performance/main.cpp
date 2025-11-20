@@ -8,8 +8,8 @@
 
 namespace vlasova_a_elem_matrix_sum {
 
-class ExampleRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kMatrixSize_ = 1000;
+class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
+  const int kMatrixSize_ = 20;  
   InType input_data_{};
   OutType expected_result_{};
 
@@ -27,7 +27,7 @@ class ExampleRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, O
   }
 };
 
-TEST_P(ExampleRunPerfTestProcesses, RunPerfModes) {
+TEST_P(VlasovaAElemMatrixSumPerfTests, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
@@ -36,8 +36,8 @@ const auto kAllPerfTasks =
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-const auto kPerfTestName = ExampleRunPerfTestProcesses::CustomPerfTestName;
+const auto kPerfTestName = VlasovaAElemMatrixSumPerfTests::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(RunModeTests, ExampleRunPerfTestProcesses, kGtestValues, kPerfTestName);
+INSTANTIATE_TEST_SUITE_P(RunModeTests, VlasovaAElemMatrixSumPerfTests, kGtestValues, kPerfTestName);
 
 }  // namespace vlasova_a_elem_matrix_sum

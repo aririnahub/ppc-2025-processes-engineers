@@ -14,7 +14,15 @@ VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
 }
 
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
-  return !GetInput().empty();
+  if (GetInput().empty()) {
+    return false;
+  }
+  for (const auto &row : GetInput()) {
+    if (row.empty()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {

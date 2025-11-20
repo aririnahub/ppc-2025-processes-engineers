@@ -28,7 +28,7 @@ bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
 }
 
 bool VlasovaAElemMatrixSumMPI::PreProcessingImpl() {
-  GetOutput().resize(GetInput().size());
+  GetOutput() = std::vector<int>(GetInput().size(), 0);
   return true;
 }
 

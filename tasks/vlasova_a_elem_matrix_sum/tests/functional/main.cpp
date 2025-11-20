@@ -1,16 +1,12 @@
 #include <gtest/gtest.h>
 #include <stb/stb_image.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <fstream>
 #include <numeric>
-#include <stdexcept>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "util/include/func_test_util.hpp"
@@ -35,7 +31,9 @@ class VlasovaAElemMatrixSumFuncTests : public ppc::util::BaseRunFuncTests<InType
     std::string abs_path = ppc::util::GetAbsoluteTaskPath(PPC_ID_vlasova_a_elem_matrix_sum, matrix_name + ".txt");
     std::ifstream file(abs_path);
 
-    int rows, cols;
+    int rows = 0;
+    int cols = 0;
+
     file >> rows >> cols;
 
     input_data_.resize(rows, std::vector<int>(cols));

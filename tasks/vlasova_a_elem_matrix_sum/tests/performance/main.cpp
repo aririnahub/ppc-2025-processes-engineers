@@ -11,8 +11,8 @@ namespace vlasova_a_elem_matrix_sum {
 
 class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
   const int kMatrixSize_ = 1000;
-  InType input_data_{};
-  OutType expected_result_{};
+  InType input_data_;
+  OutType expected_result_;
 
   void SetUp() override {
     input_data_.resize(kMatrixSize_, std::vector<int>(kMatrixSize_, 1));

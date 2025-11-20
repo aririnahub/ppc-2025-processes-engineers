@@ -1,9 +1,8 @@
 #include "vlasova_a_elem_matrix_sum/seq/include/ops_seq.hpp"
 
-#include <numeric>
+#include <cstddef>
 #include <vector>
 
-#include "util/include/util.hpp"
 #include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 
 namespace vlasova_a_elem_matrix_sum {
@@ -26,8 +25,8 @@ bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
 bool VlasovaAElemMatrixSumSEQ::RunImpl() {
   for (size_t i = 0; i < GetInput().size(); ++i) {
     int row_sum = 0;
-    for (size_t j = 0; j < GetInput()[i].size(); ++j) {
-      row_sum += GetInput()[i][j];
+    for (int val : GetInput()[i]) {
+      row_sum += val;
     }
     GetOutput()[i] = row_sum;
   }

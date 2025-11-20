@@ -2,9 +2,9 @@
 
 #include <mpi.h>
 
+#include <algorithm>
 #include <vector>
 
-#include "util/include/util.hpp"
 #include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 
 namespace vlasova_a_elem_matrix_sum {
@@ -24,16 +24,17 @@ bool VlasovaAElemMatrixSumMPI::PreProcessingImpl() {
 }
 
 bool VlasovaAElemMatrixSumMPI::RunImpl() {
-  int rank, size;
+  int rank = 0;
+  int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int total_rows = GetInput().size();
+  size_t total_rows = GetInput().size();
 
   int rows_per_process = total_rows / size;
   int remainder = total_rows % size;
 
-  int start = rank * rows_per_process + std::min(rank, remainder);
+  int start = (rank * rows_per_process) + std::min(rank, remainder);
   int end = start + rows_per_process + (rank < remainder ? 1 : 0);
   int local_size = end - start;
 
@@ -52,7 +53,7 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
 
   int current_displ = 0;
   for (int proc = 0; proc < size; proc++) {
-    int proc_start = proc * rows_per_process + std::min(proc, remainder);
+    int proc_start = (proc * rows_per_process) + std::min(proc, remainder);
     int proc_end = proc_start + rows_per_process + (proc < remainder ? 1 : 0);
     recv_counts[proc] = proc_end - proc_start;
     displs[proc] = current_displ;

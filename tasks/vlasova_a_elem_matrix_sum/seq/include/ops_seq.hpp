@@ -1,9 +1,9 @@
 #pragma once
 
-#include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 #include "task/include/task.hpp"
+#include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 
-namespace vlasova_a_elem_matrix_sum{
+namespace vlasova_a_elem_matrix_sum {
 
 class VlasovaAElemMatrixSumSEQ : public BaseTask {
  public:

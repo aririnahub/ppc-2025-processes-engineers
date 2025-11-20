@@ -3,10 +3,10 @@
 #include <numeric>
 #include <vector>
 
-#include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 #include "util/include/util.hpp"
+#include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 
-namespace vlasova_a_elem_matrix_sum{
+namespace vlasova_a_elem_matrix_sum {
 
 VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
@@ -19,14 +19,14 @@ bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
-   GetOutput().resize(GetInput().size());
+  GetOutput().resize(GetInput().size());
   return true;
 }
 
 bool VlasovaAElemMatrixSumSEQ::RunImpl() {
-  for (int i = 0; i < GetInput().size(); ++i) {
+  for (size_t i = 0; i < GetInput().size(); ++i) {
     int row_sum = 0;
-    for (int j = 0; j < GetInput()[i].size(); ++j) {
+    for (size_t j = 0; j < GetInput()[i].size(); ++j) {
       row_sum += GetInput()[i][j];
     }
     GetOutput()[i] = row_sum;

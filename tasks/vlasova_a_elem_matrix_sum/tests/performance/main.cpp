@@ -1,15 +1,16 @@
 #include <gtest/gtest.h>
+
 #include <vector>
 
+#include "util/include/perf_test_util.hpp"
 #include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 #include "vlasova_a_elem_matrix_sum/mpi/include/ops_mpi.hpp"
 #include "vlasova_a_elem_matrix_sum/seq/include/ops_seq.hpp"
-#include "util/include/perf_test_util.hpp"
 
 namespace vlasova_a_elem_matrix_sum {
 
 class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kMatrixSize_ = 1000;  
+  const int kMatrixSize_ = 1000;
   InType input_data_{};
   OutType expected_result_{};
 
@@ -31,8 +32,8 @@ TEST_P(VlasovaAElemMatrixSumPerfTests, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
-const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, VlasovaAElemMatrixSumMPI, VlasovaAElemMatrixSumSEQ>(PPC_SETTINGS_vlasova_a_elem_matrix_sum);
+const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, VlasovaAElemMatrixSumMPI, VlasovaAElemMatrixSumSEQ>(
+    PPC_SETTINGS_vlasova_a_elem_matrix_sum);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 

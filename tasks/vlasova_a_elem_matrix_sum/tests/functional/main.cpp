@@ -13,13 +13,13 @@
 #include <utility>
 #include <vector>
 
+#include "util/include/func_test_util.hpp"
+#include "util/include/util.hpp"
 #include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
 #include "vlasova_a_elem_matrix_sum/mpi/include/ops_mpi.hpp"
 #include "vlasova_a_elem_matrix_sum/seq/include/ops_seq.hpp"
-#include "util/include/func_test_util.hpp"
-#include "util/include/util.hpp"
 
-namespace vlasova_a_elem_matrix_sum{
+namespace vlasova_a_elem_matrix_sum {
 
 class VlasovaAElemMatrixSumFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
@@ -34,27 +34,27 @@ class VlasovaAElemMatrixSumFuncTests : public ppc::util::BaseRunFuncTests<InType
 
     std::string abs_path = ppc::util::GetAbsoluteTaskPath(PPC_ID_vlasova_a_elem_matrix_sum, matrix_name + ".txt");
     std::ifstream file(abs_path);
-    
+
     int rows, cols;
     file >> rows >> cols;
 
     input_data_.resize(rows, std::vector<int>(cols));
-    for (int i = 0; i < rows; ++i){
-      for (int j = 0; j < cols; ++j){
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
         file >> input_data_[i][j];
       }
     }
 
     expected_result_.resize(rows);
-    for (int i = 0; i < rows; ++i){
+    for (int i = 0; i < rows; ++i) {
       expected_result_[i] = std::accumulate(input_data_[i].begin(), input_data_[i].end(), 0);
     }
   }
- 
+
   bool CheckTestOutputData(OutType &output_data) final {
     return output_data == expected_result_;
   }
-  
+
   InType GetTestInputData() final {
     return input_data_;
   }
@@ -70,15 +70,12 @@ TEST_P(VlasovaAElemMatrixSumFuncTests, MatrixRowSum) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 3> kTestParam = {
-    std::make_tuple(1, "matrix1"),
-    std::make_tuple(2, "matrix2"),  
-    std::make_tuple(3, "matrix3")
-};
+const std::array<TestType, 3> kTestParam = {std::make_tuple(1, "matrix1"), std::make_tuple(2, "matrix2"),
+                                            std::make_tuple(3, "matrix3")};
 
-const auto kTestTasksList =
-    std::tuple_cat(ppc::util::AddFuncTask<VlasovaAElemMatrixSumMPI, InType>(kTestParam, PPC_SETTINGS_vlasova_a_elem_matrix_sum),
-                   ppc::util::AddFuncTask<VlasovaAElemMatrixSumSEQ, InType>(kTestParam, PPC_SETTINGS_vlasova_a_elem_matrix_sum));
+const auto kTestTasksList = std::tuple_cat(
+    ppc::util::AddFuncTask<VlasovaAElemMatrixSumMPI, InType>(kTestParam, PPC_SETTINGS_vlasova_a_elem_matrix_sum),
+    ppc::util::AddFuncTask<VlasovaAElemMatrixSumSEQ, InType>(kTestParam, PPC_SETTINGS_vlasova_a_elem_matrix_sum));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 

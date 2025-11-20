@@ -6,7 +6,7 @@
 
 #include "task/include/task.hpp"
 
-namespace vlasova_a_elem_matrix_sum{
+namespace vlasova_a_elem_matrix_sum {
 
 using InType = std::vector<std::vector<int>>;
 using OutType = std::vector<int>;

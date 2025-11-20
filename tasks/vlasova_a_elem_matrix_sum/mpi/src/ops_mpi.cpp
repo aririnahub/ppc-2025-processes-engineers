@@ -33,9 +33,9 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
   size_t total_rows = GetInput().size();
 
   size_t rows_per_process = total_rows / size;
-  size_t remainder = total_rows % size;
+  int remainder = static_cast<int>(total_rows % size);
 
-  size_t start = (rank * rows_per_process) + std::min<size_t>(rank, remainder);
+  size_t start = (rank * rows_per_process) + std::min(rank, remainder);
   size_t end = start + rows_per_process + (rank < remainder ? 1 : 0);
   size_t local_size = end - start;
 
@@ -54,7 +54,7 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
 
   int current_displ = 0;
   for (int proc = 0; proc < size; proc++) {
-    size_t proc_start = (proc * rows_per_process) + std::min<size_t>(proc, remainder);
+    size_t proc_start = (proc * rows_per_process) + std::min(proc, remainder);
     size_t proc_end = proc_start + rows_per_process + (proc < remainder ? 1 : 0);
     recv_counts[proc] = static_cast<int>(proc_end - proc_start);
     displs[proc] = current_displ;

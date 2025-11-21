@@ -20,15 +20,7 @@ VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
 }
 
 bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
-  if (GetInput().empty()) {
-    return false;
-  }
-  for (const auto &row : GetInput()) {
-    if (row.empty()) {
-      return false;
-    }
-  }
-  return true;
+  return !GetInput().empty();
 }
 
 bool VlasovaAElemMatrixSumMPI::PreProcessingImpl() {

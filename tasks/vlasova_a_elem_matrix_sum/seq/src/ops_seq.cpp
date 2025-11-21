@@ -1,5 +1,6 @@
 #include "vlasova_a_elem_matrix_sum/seq/include/ops_seq.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -17,15 +18,7 @@ VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
 }
 
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
-  if (GetInput().empty()) {
-    return false;
-  }
-  for (const auto &row : GetInput()) {
-    if (row.empty()) {
-      return false;
-    }
-  }
-  return true;
+  return !GetInput().empty();
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {

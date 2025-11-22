@@ -12,7 +12,7 @@ namespace vlasova_a_elem_matrix_sum {
 
 VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
-  GetOutput().clear();
+  GetInput().assign(in.begin(), in.end());
 }
 
 bool VlasovaAElemMatrixSumMPI::ValidationImpl() {

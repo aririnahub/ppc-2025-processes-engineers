@@ -9,10 +9,7 @@ namespace vlasova_a_elem_matrix_sum {
 
 VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
-  GetInput().resize(in.size());
-  for (size_t i = 0; i < in.size(); ++i) {
-    GetInput()[i] = in[i];
-  }
+  GetOutput().clear();
 }
 
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
@@ -20,7 +17,9 @@ bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
-  GetOutput() = std::vector<int>(GetInput().size(), 0);
+  GetOutput().clear();
+  GetOutput().resize(GetInput().size());
+  std::fill(GetOutput().begin(), GetOutput().end(), 0);
   return true;
 }
 

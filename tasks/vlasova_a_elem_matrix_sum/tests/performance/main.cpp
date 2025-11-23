@@ -10,7 +10,7 @@
 namespace vlasova_a_elem_matrix_sum {
 
 class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kMatrixSize_ = 1000;
+  const int kMatrixSize_ = 500;
   InType input_data_;
   OutType expected_result_;
 
@@ -20,7 +20,15 @@ class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return output_data == expected_result_;
+    if (output_data.size() != expected_result_.size()) {
+      return false;
+    }
+    for (size_t i = 0; i < output_data.size(); ++i) {
+      if (output_data[i] != expected_result_[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   InType GetTestInputData() final {

@@ -7,13 +7,23 @@
 
 namespace vlasova_a_elem_matrix_sum {
 
-VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
+VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) : BaseTask() {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
 }
 
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
-  return !GetInput().empty();
+  if (GetInput().empty()) {
+    return false;
+  }
+
+  const size_t cols = GetInput()[0].size();
+  for (const auto &row : GetInput()) {
+    if (row.size() != cols) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {

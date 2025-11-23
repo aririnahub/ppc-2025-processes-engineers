@@ -10,13 +10,23 @@
 
 namespace vlasova_a_elem_matrix_sum {
 
-VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
+VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) : BaseTask() {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
 }
 
 bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
-  return !GetInput().empty();
+  if (GetInput().empty()) {
+    return false;
+  }
+
+  const size_t cols = GetInput()[0].size();
+  for (const auto &row : GetInput()) {
+    if (row.size() != cols) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool VlasovaAElemMatrixSumMPI::PreProcessingImpl() {
@@ -30,38 +40,41 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  size_t total_rows = GetInput().size();
+  const size_t total_rows = GetInput().size();
+  if (total_rows == 0) {
+    return true;
+  }
 
-  size_t rows_per_process = total_rows / size;
-  int remainder = static_cast<int>(total_rows % size);
+  const size_t base_chunk = total_rows / size;
+  const size_t remainder = total_rows % size;
 
-  size_t start = (rank * rows_per_process) + std::min(rank, remainder);
-  size_t end = start + rows_per_process + (rank < remainder ? 1 : 0);
-  size_t local_size = end - start;
+  const size_t rank_size = static_cast<size_t>(rank);
+  const size_t local_rows = base_chunk + (rank_size < remainder ? 1 : 0);
+  const size_t start_row = rank_size * base_chunk + std::min<size_t>(rank_size, remainder);
 
-  std::vector<int> local_results(local_size);
-  for (size_t i = start; i < end; i++) {
+  std::vector<int> local_sums(local_rows);
+  for (size_t i = 0; i < local_rows; ++i) {
+    const size_t global_row = start_row + i;
     int row_sum = 0;
-    const auto &row = GetInput()[i];
-    for (int val : row) {
+    for (int val : GetInput()[global_row]) {
       row_sum += val;
     }
-    local_results[i - start] = row_sum;
+    local_sums[i] = row_sum;
   }
 
   std::vector<int> recv_counts(size);
   std::vector<int> displs(size);
 
-  int current_displ = 0;
-  for (int proc = 0; proc < size; proc++) {
-    size_t proc_start = (proc * rows_per_process) + std::min(proc, remainder);
-    size_t proc_end = proc_start + rows_per_process + (proc < remainder ? 1 : 0);
-    recv_counts[proc] = static_cast<int>(proc_end - proc_start);
-    displs[proc] = current_displ;
-    current_displ += recv_counts[proc];
+  size_t current_displ = 0;
+  for (int proc = 0; proc < size; ++proc) {
+    const size_t proc_size = static_cast<size_t>(proc);
+    const size_t proc_rows = base_chunk + (proc_size < remainder ? 1 : 0);
+    recv_counts[proc] = static_cast<int>(proc_rows);
+    displs[proc] = static_cast<int>(current_displ);
+    current_displ += proc_rows;
   }
 
-  MPI_Allgatherv(local_results.data(), static_cast<int>(local_size), MPI_INT, GetOutput().data(), recv_counts.data(),
+  MPI_Allgatherv(local_sums.data(), static_cast<int>(local_rows), MPI_INT, GetOutput().data(), recv_counts.data(),
                  displs.data(), MPI_INT, MPI_COMM_WORLD);
 
   return true;

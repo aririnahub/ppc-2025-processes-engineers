@@ -1,6 +1,5 @@
 #include "vlasova_a_elem_matrix_sum/seq/include/ops_seq.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <vector>
 

@@ -17,19 +17,11 @@ VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
 }
 
 bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
-  if (GetInput().empty()) {
-    return false;
-  }
-
-  const size_t cols = GetInput()[0].size();
-  if (!std::ranges::all_of(GetInput(), [&cols](const auto &row) { return row.size() == cols; })) {
-    return false;
-  }
-  return true;
+  return GetOutput().empty();
 }
 
 bool VlasovaAElemMatrixSumMPI::PreProcessingImpl() {
-  GetOutput().resize(GetInput().size());
+  GetOutput().clear();
   return true;
 }
 
@@ -80,7 +72,7 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
 }
 
 bool VlasovaAElemMatrixSumMPI::PostProcessingImpl() {
-  return !GetOutput().empty();
+  return true;
 }
 
 }  // namespace vlasova_a_elem_matrix_sum

@@ -15,23 +15,18 @@ VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
 }
 
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
-  if (GetInput().empty()) {
-    return false;
-  }
-
-  const size_t cols = GetInput()[0].size();
-  if (!std::ranges::all_of(GetInput(), [&cols](const auto &row) { return row.size() == cols; })) {
-    return false;
-  }
-  return true;
+  return GetOutput().empty();
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
-  GetOutput().resize(GetInput().size());
+  GetOutput().clear();
   return true;
 }
 
 bool VlasovaAElemMatrixSumSEQ::RunImpl() {
+  if (GetInput().empty()) {
+    return true;
+  }
   for (size_t i = 0; i < GetInput().size(); ++i) {
     int row_sum = 0;
     for (int val : GetInput()[i]) {
@@ -43,7 +38,7 @@ bool VlasovaAElemMatrixSumSEQ::RunImpl() {
 }
 
 bool VlasovaAElemMatrixSumSEQ::PostProcessingImpl() {
-  return !GetOutput().empty();
+  return true;
 }
 
 }  // namespace vlasova_a_elem_matrix_sum

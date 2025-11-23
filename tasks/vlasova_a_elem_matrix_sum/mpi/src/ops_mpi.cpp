@@ -10,12 +10,13 @@
 
 namespace vlasova_a_elem_matrix_sum {
 
-VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in){
+VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
+  GetInput() = in;
 }
 
 bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
-  return !GetInput().empty() && !GetInput()[0].empty();
+  return !GetInput().empty();
 }
 
 bool VlasovaAElemMatrixSumMPI::PreProcessingImpl() {

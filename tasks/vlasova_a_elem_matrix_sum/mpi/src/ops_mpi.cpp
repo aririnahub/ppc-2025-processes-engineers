@@ -10,8 +10,7 @@
 
 namespace vlasova_a_elem_matrix_sum {
 
-VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) : BaseTask(in)
-{
+VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) : BaseTask(in) {
   SetTypeOfTask(GetStaticTypeOfTask());
 }
 

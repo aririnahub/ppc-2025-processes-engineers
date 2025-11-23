@@ -1,5 +1,6 @@
 #include "vlasova_a_elem_matrix_sum/seq/include/ops_seq.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -7,9 +8,10 @@
 
 namespace vlasova_a_elem_matrix_sum {
 
-VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) : BaseTask() {
+VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
-  GetInput() = in;
+  InType tmp(in);
+  GetInput().swap(tmp);
 }
 
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
@@ -18,10 +20,8 @@ bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
   }
 
   const size_t cols = GetInput()[0].size();
-  for (const auto &row : GetInput()) {
-    if (row.size() != cols) {
-      return false;
-    }
+  if (!std::ranges::all_of(GetInput(), [&cols](const auto &row) { return row.size() == cols; })) {
+    return false;
   }
   return true;
 }

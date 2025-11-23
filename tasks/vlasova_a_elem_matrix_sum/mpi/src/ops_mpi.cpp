@@ -10,9 +10,10 @@
 
 namespace vlasova_a_elem_matrix_sum {
 
-VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) : BaseTask() {
+VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
-  GetInput() = in;
+  InType tmp(in);
+  GetInput().swap(tmp);
 }
 
 bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
@@ -21,10 +22,8 @@ bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
   }
 
   const size_t cols = GetInput()[0].size();
-  for (const auto &row : GetInput()) {
-    if (row.size() != cols) {
-      return false;
-    }
+  if (!std::ranges::all_of(GetInput(), [&cols](const auto &row) { return row.size() == cols; })) {
+    return false;
   }
   return true;
 }
@@ -48,9 +47,9 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
   const size_t base_chunk = total_rows / size;
   const size_t remainder = total_rows % size;
 
-  const size_t rank_size = static_cast<size_t>(rank);
+  const auto rank_size = static_cast<size_t>(rank);
   const size_t local_rows = base_chunk + (rank_size < remainder ? 1 : 0);
-  const size_t start_row = rank_size * base_chunk + std::min<size_t>(rank_size, remainder);
+  const size_t start_row = (rank_size * base_chunk) + std::min<size_t>(rank_size, remainder);
 
   std::vector<int> local_sums(local_rows);
   for (size_t i = 0; i < local_rows; ++i) {
@@ -67,7 +66,7 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
 
   size_t current_displ = 0;
   for (int proc = 0; proc < size; ++proc) {
-    const size_t proc_size = static_cast<size_t>(proc);
+    const auto proc_size = static_cast<size_t>(proc);
     const size_t proc_rows = base_chunk + (proc_size < remainder ? 1 : 0);
     recv_counts[proc] = static_cast<int>(proc_rows);
     displs[proc] = static_cast<int>(current_displ);

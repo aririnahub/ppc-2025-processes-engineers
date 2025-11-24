@@ -19,7 +19,7 @@ VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
 
   std::vector<int> empty_data;
   InType processed_input = std::make_tuple(empty_data, std::get<1>(in), std::get<2>(in));
-  
+
   if (rank == 0) {
     GetInput() = in;
   } else {
@@ -30,23 +30,22 @@ VlasovaAElemMatrixSumMPI::VlasovaAElemMatrixSumMPI(const InType &in) {
 bool VlasovaAElemMatrixSumMPI::ValidationImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   if (rank != 0) {
     return true;
   }
 
   int rows = std::get<1>(GetInput());
   int cols = std::get<2>(GetInput());
-  const auto& matrix_data = std::get<0>(GetInput());
+  const auto &matrix_data = std::get<0>(GetInput());
 
-  return matrix_data.size() == static_cast<size_t>(rows) * static_cast<size_t>(cols) && 
-         rows > 0 && cols > 0;
+  return matrix_data.size() == static_cast<size_t>(rows) * static_cast<size_t>(cols) && rows > 0 && cols > 0;
 }
 
 bool VlasovaAElemMatrixSumMPI::PreProcessingImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   if (rank == 0) {
     int rows = std::get<1>(GetInput());
     GetOutput().resize(rows, 0);
@@ -93,11 +92,10 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
     current_displacement += send_counts[proc];
   }
 
-  const auto& global_data = rank == 0 ? std::get<0>(GetInput()) : std::vector<int>();
-  
-  MPI_Scatterv(global_data.data(), send_counts.data(), displacements.data(), MPI_INT,
-               local_matrix_data.data(), local_row_count * total_cols, MPI_INT,
-               0, MPI_COMM_WORLD);
+  const auto &global_data = rank == 0 ? std::get<0>(GetInput()) : std::vector<int>();
+
+  MPI_Scatterv(global_data.data(), send_counts.data(), displacements.data(), MPI_INT, local_matrix_data.data(),
+               local_row_count * total_cols, MPI_INT, 0, MPI_COMM_WORLD);
 
   std::vector<int> local_sums(total_rows, 0);
   for (int i = 0; i < local_row_count; ++i) {

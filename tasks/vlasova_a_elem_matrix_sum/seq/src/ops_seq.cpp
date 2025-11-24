@@ -16,10 +16,9 @@ VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
   int rows = std::get<1>(GetInput());
   int cols = std::get<2>(GetInput());
-  const auto& matrix_data = std::get<0>(GetInput());
+  const auto &matrix_data = std::get<0>(GetInput());
 
-  return matrix_data.size() == static_cast<size_t>(rows) * static_cast<size_t>(cols) && 
-         rows > 0 && cols > 0;
+  return matrix_data.size() == static_cast<size_t>(rows) * static_cast<size_t>(cols) && rows > 0 && cols > 0;
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
@@ -31,7 +30,7 @@ bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
 bool VlasovaAElemMatrixSumSEQ::RunImpl() {
   int rows = std::get<1>(GetInput());
   int cols = std::get<2>(GetInput());
-  const auto& matrix_data = std::get<0>(GetInput());
+  const auto &matrix_data = std::get<0>(GetInput());
 
   for (int i = 0; i < rows; ++i) {
     int row_sum = 0;

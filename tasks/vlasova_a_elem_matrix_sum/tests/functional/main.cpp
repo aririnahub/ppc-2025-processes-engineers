@@ -44,7 +44,7 @@ class VlasovaAElemMatrixSumFuncTests : public ppc::util::BaseRunFuncTests<InType
     }
 
     input_data_ = std::make_tuple(matrix_data, rows, cols);
-    
+
     expected_result_.resize(rows);
     for (int i = 0; i < rows; ++i) {
       int row_sum = 0;

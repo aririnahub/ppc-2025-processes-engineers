@@ -23,7 +23,7 @@ class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType
     }
 
     input_data_ = std::make_tuple(matrix_data, kMatrixRows_, kMatrixCols_);
-    
+
     expected_result_.resize(kMatrixRows_);
     for (int i = 0; i < kMatrixRows_; ++i) {
       expected_result_[i] = 0;

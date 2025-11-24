@@ -11,13 +11,26 @@
 namespace vlasova_a_elem_matrix_sum {
 
 class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kMatrixSize_ = 500;
+  const int kMatrixRows_ = 10000;
+  const int kMatrixCols_ = 10000;
   InType input_data_;
   OutType expected_result_;
 
   void SetUp() override {
-    input_data_.resize(kMatrixSize_, std::vector<int>(kMatrixSize_, 1));
-    expected_result_.resize(kMatrixSize_, kMatrixSize_);
+    std::vector<int> matrix_data(kMatrixRows_ * kMatrixCols_);
+    for (int i = 0; i < kMatrixRows_ * kMatrixCols_; ++i) {
+      matrix_data[i] = (i % 100) + 1;
+    }
+
+    input_data_ = std::make_tuple(matrix_data, kMatrixRows_, kMatrixCols_);
+    
+    expected_result_.resize(kMatrixRows_);
+    for (int i = 0; i < kMatrixRows_; ++i) {
+      expected_result_[i] = 0;
+      for (int j = 0; j < kMatrixCols_; ++j) {
+        expected_result_[i] += matrix_data[i * kMatrixCols_ + j];
+      }
+    }
   }
 
   bool CheckTestOutputData(OutType &output_data) final {

@@ -9,27 +9,34 @@ namespace vlasova_a_elem_matrix_sum {
 
 VlasovaAElemMatrixSumSEQ::VlasovaAElemMatrixSumSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
-  InType tmp(in);
-  GetInput().swap(tmp);
+  GetInput() = in;
+  GetOutput() = {};
 }
 
 bool VlasovaAElemMatrixSumSEQ::ValidationImpl() {
-  return GetOutput().empty();
+  int rows = std::get<1>(GetInput());
+  int cols = std::get<2>(GetInput());
+  const auto& matrix_data = std::get<0>(GetInput());
+
+  return matrix_data.size() == static_cast<size_t>(rows) * static_cast<size_t>(cols) && 
+         rows > 0 && cols > 0;
 }
 
 bool VlasovaAElemMatrixSumSEQ::PreProcessingImpl() {
-  GetOutput().clear();
+  int rows = std::get<1>(GetInput());
+  GetOutput().resize(rows, 0);
   return true;
 }
 
 bool VlasovaAElemMatrixSumSEQ::RunImpl() {
-  if (GetInput().empty()) {
-    return true;
-  }
-  for (size_t i = 0; i < GetInput().size(); ++i) {
+  int rows = std::get<1>(GetInput());
+  int cols = std::get<2>(GetInput());
+  const auto& matrix_data = std::get<0>(GetInput());
+
+  for (int i = 0; i < rows; ++i) {
     int row_sum = 0;
-    for (int val : GetInput()[i]) {
-      row_sum += val;
+    for (int j = 0; j < cols; ++j) {
+      row_sum += matrix_data[i * cols + j];
     }
     GetOutput()[i] = row_sum;
   }

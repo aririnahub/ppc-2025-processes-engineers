@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <tuple>
 #include <vector>
 
 #include "vlasova_a_elem_matrix_sum/common/include/common.hpp"
@@ -77,9 +78,9 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
   const int remaining_rows = total_rows % size;
 
   const int local_row_count = base_rows_per_process + (rank < remaining_rows ? 1 : 0);
-  const int row_offset = rank * base_rows_per_process + std::min(rank, remaining_rows);
+  const int row_offset = (rank * base_rows_per_process) + std::min(rank, remaining_rows);
 
-  std::vector<int> local_matrix_data(local_row_count * total_cols);
+  std::vector<int> local_matrix_data(static_cast<size_t>(local_row_count) * static_cast<size_t>(total_cols));
 
   std::vector<int> send_counts(size);
   std::vector<int> displacements(size);
@@ -101,7 +102,7 @@ bool VlasovaAElemMatrixSumMPI::RunImpl() {
   for (int i = 0; i < local_row_count; ++i) {
     int global_row_index = row_offset + i;
     for (int j = 0; j < total_cols; ++j) {
-      local_sums[global_row_index] += local_matrix_data[i * total_cols + j];
+      local_sums[global_row_index] += local_matrix_data[(i * total_cols) + j];
     }
   }
 

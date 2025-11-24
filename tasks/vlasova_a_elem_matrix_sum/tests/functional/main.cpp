@@ -4,7 +4,6 @@
 #include <array>
 #include <cstddef>
 #include <fstream>
-#include <numeric>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -36,10 +35,10 @@ class VlasovaAElemMatrixSumFuncTests : public ppc::util::BaseRunFuncTests<InType
 
     file >> rows >> cols;
 
-    std::vector<int> matrix_data(rows * cols);
+    std::vector<int> matrix_data(static_cast<size_t>(rows) * static_cast<size_t>(cols));
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        file >> matrix_data[i * cols + j];
+        file >> matrix_data[(i * cols) + j];
       }
     }
 
@@ -49,7 +48,7 @@ class VlasovaAElemMatrixSumFuncTests : public ppc::util::BaseRunFuncTests<InType
     for (int i = 0; i < rows; ++i) {
       int row_sum = 0;
       for (int j = 0; j < cols; ++j) {
-        row_sum += matrix_data[i * cols + j];
+        row_sum += matrix_data[(i * cols) + j];
       }
       expected_result_[i] = row_sum;
     }

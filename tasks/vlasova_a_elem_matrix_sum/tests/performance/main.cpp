@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <tuple>
 #include <vector>
 
 #include "util/include/perf_test_util.hpp"
@@ -17,7 +18,7 @@ class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType
   OutType expected_result_;
 
   void SetUp() override {
-    std::vector<int> matrix_data(kMatrixRows_ * kMatrixCols_);
+    std::vector<int> matrix_data(static_cast<size_t>(kMatrixRows_) * static_cast<size_t>(kMatrixCols_));
     for (int i = 0; i < kMatrixRows_ * kMatrixCols_; ++i) {
       matrix_data[i] = (i % 100) + 1;
     }
@@ -28,7 +29,7 @@ class VlasovaAElemMatrixSumPerfTests : public ppc::util::BaseRunPerfTests<InType
     for (int i = 0; i < kMatrixRows_; ++i) {
       expected_result_[i] = 0;
       for (int j = 0; j < kMatrixCols_; ++j) {
-        expected_result_[i] += matrix_data[i * kMatrixCols_ + j];
+        expected_result_[i] += matrix_data[(i * kMatrixCols_) + j];
       }
     }
   }

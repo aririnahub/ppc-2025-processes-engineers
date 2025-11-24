@@ -35,7 +35,7 @@ bool VlasovaAElemMatrixSumSEQ::RunImpl() {
   for (int i = 0; i < rows; ++i) {
     int row_sum = 0;
     for (int j = 0; j < cols; ++j) {
-      row_sum += matrix_data[i * cols + j];
+      row_sum += matrix_data[(i * cols) + j];
     }
     GetOutput()[i] = row_sum;
   }

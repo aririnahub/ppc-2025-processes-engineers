@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <ranges>
 #include <vector>
 
 #include "vlasova_a_image_smoothing/common/include/common.hpp"
@@ -22,18 +23,18 @@ static std::uint8_t CalculatePixelMedian(int col_idx, int row_idx, int width, in
       const int neighbor_y = row_idx + dy;
 
       if (neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height) {
-        const std::size_t index = static_cast<std::size_t>(neighbor_y) * width + neighbor_x;
+        const std::size_t index = (static_cast<std::size_t>(neighbor_y) * width) + neighbor_x;
         neighbors.push_back(image[index]);
       }
     }
   }
 
   if (!neighbors.empty()) {
-    std::sort(neighbors.begin(), neighbors.end());
+    std::ranges::sort(neighbors.begin(), neighbors.end());
     return neighbors[neighbors.size() / 2];
   }
 
-  const std::size_t index = static_cast<std::size_t>(row_idx) * width + col_idx;
+  const std::size_t index = (static_cast<std::size_t>(row_idx) * width) + col_idx;
   return image[index];
 }
 
@@ -71,7 +72,7 @@ bool VlasovaAImageSmoothingSEQ::PreProcessingImpl() {
 bool VlasovaAImageSmoothingSEQ::RunImpl() {
   for (int row_idx = 0; row_idx < height_; ++row_idx) {
     for (int col_idx = 0; col_idx < width_; ++col_idx) {
-      const std::size_t output_index = static_cast<std::size_t>(row_idx) * width_ + col_idx;
+      const std::size_t output_index = (static_cast<std::size_t>(row_idx) * width_) + col_idx;
       output_image_[output_index] = CalculatePixelMedian(col_idx, row_idx, width_, height_, window_size_, input_image_);
     }
   }

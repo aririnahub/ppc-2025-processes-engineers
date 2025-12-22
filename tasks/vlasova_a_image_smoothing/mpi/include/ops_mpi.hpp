@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cstdint>
-#include <vector>
-
 #include "task/include/task.hpp"
 #include "vlasova_a_image_smoothing/common/include/common.hpp"
 

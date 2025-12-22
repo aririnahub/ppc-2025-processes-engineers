@@ -27,7 +27,7 @@ static std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_sta
 
       if (neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height) {
         const int local_row = neighbor_y - overlap_start;
-        const std::size_t index = static_cast<std::size_t>(local_row) * width + neighbor_x;
+        const std::size_t index = (static_cast<std::size_t>(local_row) * width) + neighbor_x;
         neighbors.push_back(local_data[index]);
       }
     }
@@ -39,7 +39,7 @@ static std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_sta
   }
 
   const int local_row = row_idx - overlap_start;
-  const std::size_t index = static_cast<std::size_t>(local_row) * width + col_idx;
+  const std::size_t index = (static_cast<std::size_t>(local_row) * width) + col_idx;
   return local_data[index];
 }
 
@@ -49,7 +49,7 @@ static void PrepareScatterData(int size, int width, int height, int radius, std:
   const int extra_rows = height % size;
 
   for (int proc = 0; proc < size; ++proc) {
-    const int proc_start = proc * base_rows + std::min(proc, extra_rows);
+    const int proc_start = (proc * base_rows) + std::min(proc, extra_rows);
     const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
 
     if (proc_end > proc_start) {
@@ -69,7 +69,7 @@ static void PrepareGatherData(int size, int width, int height, std::vector<int> 
   const int extra_rows = height % size;
 
   for (int proc = 0; proc < size; ++proc) {
-    const int proc_start = proc * base_rows + std::min(proc, extra_rows);
+    const int proc_start = (proc * base_rows) + std::min(proc, extra_rows);
     const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
     sendcounts[static_cast<std::size_t>(proc)] = (proc_end - proc_start) * width;
     displs[static_cast<std::size_t>(proc)] = proc_start * width;
@@ -139,7 +139,7 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
   const int extra_rows = height_ % size;
 
   // Вычисляем границы для текущего процесса
-  const int start_row = rank * base_rows + std::min(rank, extra_rows);
+  const int start_row = (rank * base_rows) + std::min(rank, extra_rows);
   const int end_row = start_row + base_rows + (rank < extra_rows ? 1 : 0);
   const int local_height = end_row - start_row;
 
@@ -179,7 +179,7 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
     const int global_row = start_row + local_row;
 
     for (int col_idx = 0; col_idx < width_; ++col_idx) {
-      const std::size_t index = static_cast<std::size_t>(local_row) * width_ + col_idx;
+      const std::size_t index = (static_cast<std::size_t>(local_row) * width_) + col_idx;
       local_result[index] =
           ComputePixelMedian(col_idx, global_row, overlap_start, local_image, width_, height_, window_size_);
     }

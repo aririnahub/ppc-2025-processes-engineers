@@ -9,33 +9,6 @@
 
 namespace vlasova_a_image_smoothing {
 
-static std::uint8_t CalculatePixelMedian(int col_idx, int row_idx, int width, int height, int window_size,
-                                         const std::vector<std::uint8_t> &image) {
-  const int radius = window_size / 2;
-  std::vector<std::uint8_t> neighbors;
-  neighbors.reserve(static_cast<std::size_t>(window_size) * window_size);
-
-  for (int dy = -radius; dy <= radius; ++dy) {
-    for (int dx = -radius; dx <= radius; ++dx) {
-      const int neighbor_x = col_idx + dx;
-      const int neighbor_y = row_idx + dy;
-
-      if (neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height) {
-        const std::size_t index = (static_cast<std::size_t>(neighbor_y) * width) + neighbor_x;
-        neighbors.push_back(image[index]);
-      }
-    }
-  }
-
-  if (!neighbors.empty()) {
-    std::sort(neighbors.begin(), neighbors.end());  // NOLINT
-    return neighbors[neighbors.size() / 2];
-  }
-
-  const std::size_t index = (static_cast<std::size_t>(row_idx) * width) + col_idx;
-  return image[index];
-}
-
 VlasovaAImageSmoothingSEQ::VlasovaAImageSmoothingSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;

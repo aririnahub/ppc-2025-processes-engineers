@@ -6,12 +6,75 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <ranges>
 #include <vector>
 
 #include "vlasova_a_image_smoothing/common/include/common.hpp"
 
 namespace vlasova_a_image_smoothing {
+
+// Вспомогательные функции как static (видны только в этом файле)
+static std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_start,
+                                       const std::vector<std::uint8_t> &local_data, int width, int height,
+                                       int window_size) {
+  const int radius = window_size / 2;
+  std::vector<std::uint8_t> neighbors;
+  neighbors.reserve(static_cast<std::size_t>(window_size) * window_size);
+
+  for (int dy = -radius; dy <= radius; ++dy) {
+    for (int dx = -radius; dx <= radius; ++dx) {
+      const int neighbor_x = col_idx + dx;
+      const int neighbor_y = row_idx + dy;
+
+      if (neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height) {
+        const int local_row = neighbor_y - overlap_start;
+        const std::size_t index = static_cast<std::size_t>(local_row) * width + neighbor_x;
+        neighbors.push_back(local_data[index]);
+      }
+    }
+  }
+
+  if (!neighbors.empty()) {
+    std::sort(neighbors.begin(), neighbors.end());
+    return neighbors[neighbors.size() / 2];
+  }
+
+  const int local_row = row_idx - overlap_start;
+  const std::size_t index = static_cast<std::size_t>(local_row) * width + col_idx;
+  return local_data[index];
+}
+
+static void PrepareScatterData(int size, int width, int height, int radius, std::vector<int> &sendcounts,
+                               std::vector<int> &displs) {
+  const int base_rows = height / size;
+  const int extra_rows = height % size;
+
+  for (int proc = 0; proc < size; ++proc) {
+    const int proc_start = proc * base_rows + std::min(proc, extra_rows);
+    const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
+
+    if (proc_end > proc_start) {
+      const int proc_overlap_start = std::max(0, proc_start - radius);
+      const int proc_overlap_end = std::min(height, proc_end + radius);
+      sendcounts[static_cast<std::size_t>(proc)] = (proc_overlap_end - proc_overlap_start) * width;
+      displs[static_cast<std::size_t>(proc)] = proc_overlap_start * width;
+    } else {
+      sendcounts[static_cast<std::size_t>(proc)] = 0;
+      displs[static_cast<std::size_t>(proc)] = 0;
+    }
+  }
+}
+
+static void PrepareGatherData(int size, int width, int height, std::vector<int> &sendcounts, std::vector<int> &displs) {
+  const int base_rows = height / size;
+  const int extra_rows = height % size;
+
+  for (int proc = 0; proc < size; ++proc) {
+    const int proc_start = proc * base_rows + std::min(proc, extra_rows);
+    const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
+    sendcounts[static_cast<std::size_t>(proc)] = (proc_end - proc_start) * width;
+    displs[static_cast<std::size_t>(proc)] = proc_start * width;
+  }
+}
 
 VlasovaAImageSmoothingMPI::VlasovaAImageSmoothingMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
@@ -65,35 +128,6 @@ bool VlasovaAImageSmoothingMPI::PreProcessingImpl() {
   return true;
 }
 
-std::uint8_t VlasovaAImageSmoothingMPI::CalculatePixelMedian(int col_idx, int row_idx, int overlap_start,
-                                                             const std::vector<std::uint8_t> &local_data) const {
-  const int radius = window_size_ / 2;
-  std::vector<std::uint8_t> neighbors;
-  neighbors.reserve(static_cast<std::size_t>(window_size_) * window_size_);
-
-  for (int dy = -radius; dy <= radius; ++dy) {
-    for (int dx = -radius; dx <= radius; ++dx) {
-      const int neighbor_x = col_idx + dx;
-      const int neighbor_y = row_idx + dy;
-
-      if (neighbor_x >= 0 && neighbor_x < width_ && neighbor_y >= 0 && neighbor_y < height_) {
-        const int local_row = neighbor_y - overlap_start;
-        const std::size_t index = (static_cast<std::size_t>(local_row) * width_) + neighbor_x;
-        neighbors.push_back(local_data[index]);
-      }
-    }
-  }
-
-  if (!neighbors.empty()) {
-    std::ranges::sort(neighbors);  // Используем ranges версию
-    return neighbors[neighbors.size() / 2];
-  }
-
-  const int local_row = row_idx - overlap_start;
-  const std::size_t index = (static_cast<std::size_t>(local_row) * width_) + col_idx;
-  return local_data[index];
-}
-
 bool VlasovaAImageSmoothingMPI::RunImpl() {
   int rank = 0;
   int size = 1;
@@ -101,11 +135,11 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   const int radius = window_size_ / 2;
-
   const int base_rows = height_ / size;
   const int extra_rows = height_ % size;
 
-  const int start_row = (rank * base_rows) + std::min(rank, extra_rows);
+  // Вычисляем границы для текущего процесса
+  const int start_row = rank * base_rows + std::min(rank, extra_rows);
   const int end_row = start_row + base_rows + (rank < extra_rows ? 1 : 0);
   const int local_height = end_row - start_row;
 
@@ -116,10 +150,12 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
     return true;
   }
 
+  // Вычисляем перекрытие для соседних пикселей
   const int overlap_start = std::max(0, start_row - radius);
   const int overlap_end = std::min(height_, end_row + radius);
   const int overlap_height = overlap_end - overlap_start;
 
+  // Подготовка данных для scatter
   std::vector<std::uint8_t> full_image;
   if (rank == 0) {
     full_image = GetInput().data;
@@ -129,56 +165,42 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
   std::vector<int> displs(static_cast<std::size_t>(size));
 
   if (rank == 0) {
-    for (int proc = 0; proc < size; ++proc) {
-      const int proc_start = (proc * base_rows) + std::min(proc, extra_rows);
-      const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
-
-      if (proc_end > proc_start) {
-        const int proc_overlap_start = std::max(0, proc_start - radius);
-        const int proc_overlap_end = std::min(height_, proc_end + radius);
-        sendcounts[static_cast<std::size_t>(proc)] = (proc_overlap_end - proc_overlap_start) * width_;
-        displs[static_cast<std::size_t>(proc)] = proc_overlap_start * width_;
-      } else {
-        sendcounts[static_cast<std::size_t>(proc)] = 0;
-        displs[static_cast<std::size_t>(proc)] = 0;
-      }
-    }
+    PrepareScatterData(size, width_, height_, radius, sendcounts, displs);
   }
 
+  // Раздача данных по процессам
   std::vector<std::uint8_t> local_image(static_cast<std::size_t>(overlap_height) * width_);
-
   MPI_Scatterv((rank == 0 ? full_image.data() : nullptr), sendcounts.data(), displs.data(), MPI_UNSIGNED_CHAR,
                local_image.data(), overlap_height * width_, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
+  // Обработка локальных данных
   std::vector<std::uint8_t> local_result(static_cast<std::size_t>(local_height) * width_);
-
   for (int local_row = 0; local_row < local_height; ++local_row) {
     const int global_row = start_row + local_row;
 
     for (int col_idx = 0; col_idx < width_; ++col_idx) {
-      const std::size_t index = (static_cast<std::size_t>(local_row) * width_) + col_idx;
-      local_result[index] = CalculatePixelMedian(col_idx, global_row, overlap_start, local_image);
+      const std::size_t index = static_cast<std::size_t>(local_row) * width_ + col_idx;
+      local_result[index] =
+          ComputePixelMedian(col_idx, global_row, overlap_start, local_image, width_, height_, window_size_);
     }
   }
 
+  // Подготовка для сбора результатов
   std::vector<std::uint8_t> result_image;
   if (rank == 0) {
     result_image.resize(static_cast<std::size_t>(width_) * height_);
   }
 
   if (rank == 0) {
-    for (int proc = 0; proc < size; ++proc) {
-      const int proc_start = (proc * base_rows) + std::min(proc, extra_rows);
-      const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
-      sendcounts[static_cast<std::size_t>(proc)] = (proc_end - proc_start) * width_;
-      displs[static_cast<std::size_t>(proc)] = proc_start * width_;
-    }
+    PrepareGatherData(size, width_, height_, sendcounts, displs);
   }
 
+  // Сбор результатов
   MPI_Gatherv(local_result.data(), local_height * width_, MPI_UNSIGNED_CHAR,
               (rank == 0 ? result_image.data() : nullptr), sendcounts.data(), displs.data(), MPI_UNSIGNED_CHAR, 0,
               MPI_COMM_WORLD);
 
+  // Распространение результата на все процессы
   if (rank == 0) {
     GetOutput().width = width_;
     GetOutput().height = height_;

@@ -21,9 +21,6 @@ class VlasovaAImageSmoothingMPI : public ppc::task::Task<InType, OutType> {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  std::uint8_t CalculatePixelMedian(int col_idx, int row_idx, int overlap_start,
-                                    const std::vector<std::uint8_t> &local_data) const;
-
   int width_ = 0;
   int height_ = 0;
   int window_size_ = 3;

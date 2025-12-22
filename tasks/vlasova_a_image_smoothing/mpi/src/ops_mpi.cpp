@@ -6,16 +6,18 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <ranges>
 #include <vector>
 
 #include "vlasova_a_image_smoothing/common/include/common.hpp"
 
 namespace vlasova_a_image_smoothing {
 
-// Вспомогательные функции как static (видны только в этом файле)
-static std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_start,
-                                       const std::vector<std::uint8_t> &local_data, int width, int height,
-                                       int window_size) {
+namespace {  // Анонимный namespace вместо static
+
+// Вспомогательная функция для вычисления медианы
+std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_start,
+                                const std::vector<std::uint8_t> &local_data, int width, int height, int window_size) {
   const int radius = window_size / 2;
   std::vector<std::uint8_t> neighbors;
   neighbors.reserve(static_cast<std::size_t>(window_size) * window_size);
@@ -27,29 +29,30 @@ static std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_sta
 
       if (neighbor_x >= 0 && neighbor_x < width && neighbor_y >= 0 && neighbor_y < height) {
         const int local_row = neighbor_y - overlap_start;
-        const std::size_t index = (static_cast<std::size_t>(local_row) * width) + neighbor_x;
+        const std::size_t index = static_cast<std::size_t>(local_row) * width + neighbor_x;
         neighbors.push_back(local_data[index]);
       }
     }
   }
 
   if (!neighbors.empty()) {
-    std::sort(neighbors.begin(), neighbors.end());
+    std::ranges::sort(neighbors);
     return neighbors[neighbors.size() / 2];
   }
 
   const int local_row = row_idx - overlap_start;
-  const std::size_t index = (static_cast<std::size_t>(local_row) * width) + col_idx;
+  const std::size_t index = static_cast<std::size_t>(local_row) * width + col_idx;
   return local_data[index];
 }
 
-static void PrepareScatterData(int size, int width, int height, int radius, std::vector<int> &sendcounts,
-                               std::vector<int> &displs) {
+// Вспомогательная функция для распределения данных
+void PrepareScatterData(int size, int width, int height, int radius, std::vector<int> &sendcounts,
+                        std::vector<int> &displs) {
   const int base_rows = height / size;
   const int extra_rows = height % size;
 
   for (int proc = 0; proc < size; ++proc) {
-    const int proc_start = (proc * base_rows) + std::min(proc, extra_rows);
+    const int proc_start = proc * base_rows + std::min(proc, extra_rows);
     const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
 
     if (proc_end > proc_start) {
@@ -64,17 +67,20 @@ static void PrepareScatterData(int size, int width, int height, int radius, std:
   }
 }
 
-static void PrepareGatherData(int size, int width, int height, std::vector<int> &sendcounts, std::vector<int> &displs) {
+// Вспомогательная функция для сбора данных
+void PrepareGatherData(int size, int width, int height, std::vector<int> &sendcounts, std::vector<int> &displs) {
   const int base_rows = height / size;
   const int extra_rows = height % size;
 
   for (int proc = 0; proc < size; ++proc) {
-    const int proc_start = (proc * base_rows) + std::min(proc, extra_rows);
+    const int proc_start = proc * base_rows + std::min(proc, extra_rows);
     const int proc_end = proc_start + base_rows + (proc < extra_rows ? 1 : 0);
     sendcounts[static_cast<std::size_t>(proc)] = (proc_end - proc_start) * width;
     displs[static_cast<std::size_t>(proc)] = proc_start * width;
   }
 }
+
+}  // namespace
 
 VlasovaAImageSmoothingMPI::VlasovaAImageSmoothingMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());

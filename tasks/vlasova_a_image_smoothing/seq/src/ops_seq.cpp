@@ -1,77 +1,73 @@
 #include "vlasova_a_image_smoothing/seq/include/ops_seq.hpp"
 
 #include <algorithm>
-#include <cstdint>
+#include <cstddef>
 #include <vector>
 
 namespace vlasova_a_image_smoothing {
 
-VlasovaAImageSmoothingSEQ::VlasovaAImageSmoothingSEQ(const InType &in) {
+VlasovaAImageSmoothingSEQ::VlasovaAImageSmoothingSEQ(const InType &in) : window_size_(3) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  window_size_ = 3;
 }
 
 bool VlasovaAImageSmoothingSEQ::ValidationImpl() {
-  const auto& input = GetInput();
-  
+  const auto &input = GetInput();
+
   if (input.width <= 0 || input.height <= 0) {
     return false;
   }
-  
-  if (input.data.empty()) {
+
+  if (input.Empty()) {
     return false;
   }
-  
-  size_t expected_size = static_cast<size_t>(input.width) * input.height;
-  if (input.data.size() != expected_size) {
-    return false;
-  }
-  
-  return true;
+
+  const std::size_t expected_size = input.TotalPixels();
+  return input.data.size() == expected_size;
 }
 
 bool VlasovaAImageSmoothingSEQ::PreProcessingImpl() {
-  const auto& input = GetInput();
+  const auto &input = GetInput();
 
   width_ = input.width;
   height_ = input.height;
   input_image_ = input.data;
   output_image_.resize(input_image_.size());
-  
+
   return true;
 }
 
 bool VlasovaAImageSmoothingSEQ::RunImpl() {
   const int radius = window_size_ / 2;
-  
-  for (int y = 0; y < height_; ++y) {
-    for (int x = 0; x < width_; ++x) {
-      std::vector<uint8_t> neighbors;
-      neighbors.reserve(window_size_ * window_size_);
-      
+
+  for (int row_idx = 0; row_idx < height_; ++row_idx) {
+    for (int col_idx = 0; col_idx < width_; ++col_idx) {
+      std::vector<std::uint8_t> neighbors;
+      neighbors.reserve(static_cast<std::size_t>(window_size_) * window_size_);
+
       for (int dy = -radius; dy <= radius; ++dy) {
         for (int dx = -radius; dx <= radius; ++dx) {
-          int nx = x + dx;
-          int ny = y + dy;
-        
-          if (nx >= 0 && nx < width_ && ny >= 0 && ny < height_) {
-            neighbors.push_back(input_image_[ny * width_ + nx]);
+          const int neighbor_x = col_idx + dx;
+          const int neighbor_y = row_idx + dy;
+
+          if (neighbor_x >= 0 && neighbor_x < width_ && neighbor_y >= 0 && neighbor_y < height_) {
+            const std::size_t index = static_cast<std::size_t>(neighbor_y) * width_ + neighbor_x;
+            neighbors.push_back(input_image_[index]);
           }
         }
       }
-      
+
       if (!neighbors.empty()) {
-        auto mid = neighbors.begin() + neighbors.size() / 2;
-        std::nth_element(neighbors.begin(), mid, neighbors.end());
-        output_image_[y * width_ + x] = *mid;
-      }
-      else {
-        output_image_[y * width_ + x] = input_image_[y * width_ + x];
+        std::sort(neighbors.begin(), neighbors.end());
+        const std::size_t output_index = static_cast<std::size_t>(row_idx) * width_ + col_idx;
+        output_image_[output_index] = neighbors[neighbors.size() / 2];
+      } else {
+        const std::size_t index = static_cast<std::size_t>(row_idx) * width_ + col_idx;
+        output_image_[index] = input_image_[index];
       }
     }
   }
-  
+
   return true;
 }
 
@@ -80,16 +76,12 @@ bool VlasovaAImageSmoothingSEQ::PostProcessingImpl() {
   GetOutput().height = height_;
   GetOutput().data = output_image_;
 
-  if (GetOutput().data.empty()) {
+  if (GetOutput().Empty()) {
     return false;
   }
-  
-  size_t expected_size = static_cast<size_t>(width_) * height_;
-  if (GetOutput().data.size() != expected_size) {
-    return false;
-  }
-  
-  return true;
+
+  const std::size_t expected_size = static_cast<std::size_t>(width_) * height_;
+  return GetOutput().data.size() == expected_size;
 }
 
 }  // namespace vlasova_a_image_smoothing

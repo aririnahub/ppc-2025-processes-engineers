@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
+#include "task/include/task.hpp"
 #include "vlasova_a_image_smoothing/common/include/common.hpp"
 
 namespace vlasova_a_image_smoothing {
@@ -16,9 +20,10 @@ class VlasovaAImageSmoothingMPI : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-  
-  uint8_t GetPixelMedian(int x, int y, int overlap_start, const std::vector<uint8_t>& local_data) const;
-  
+
+  std::uint8_t GetPixelMedian(int col_idx, int row_idx, int overlap_start,
+                              const std::vector<std::uint8_t> &local_data) const;
+
   int width_ = 0;
   int height_ = 0;
   int window_size_ = 3;

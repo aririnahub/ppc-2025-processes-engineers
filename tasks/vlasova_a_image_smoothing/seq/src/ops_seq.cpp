@@ -1,8 +1,10 @@
 #include "vlasova_a_image_smoothing/seq/include/ops_seq.hpp"
 
 #include <algorithm>
-#include <cstddef>
-#include <vector>
+#include <cstdint>
+#include <ranges>
+
+#include "vlasova_a_image_smoothing/common/include/common.hpp"
 
 namespace vlasova_a_image_smoothing {
 
@@ -58,7 +60,7 @@ bool VlasovaAImageSmoothingSEQ::RunImpl() {
       }
 
       if (!neighbors.empty()) {
-        std::sort(neighbors.begin(), neighbors.end());
+        std::ranges::sort(neighbors);
         const std::size_t output_index = (static_cast<std::size_t>(row_idx) * width_) + col_idx;
         output_image_[output_index] = neighbors[neighbors.size() / 2];
       } else {

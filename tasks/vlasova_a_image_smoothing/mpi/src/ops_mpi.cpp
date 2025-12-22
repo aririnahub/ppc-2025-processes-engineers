@@ -5,7 +5,11 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
+#include <ranges>
 #include <vector>
+
+#include "vlasova_a_image_smoothing/common/include/common.hpp"
 
 namespace vlasova_a_image_smoothing {
 
@@ -61,8 +65,8 @@ bool VlasovaAImageSmoothingMPI::PreProcessingImpl() {
   return true;
 }
 
-std::uint8_t VlasovaAImageSmoothingMPI::GetPixelMedian(int col_idx, int row_idx, int overlap_start,
-                                                       const std::vector<std::uint8_t> &local_data) const {
+std::uint8_t VlasovaAImageSmoothingMPI::CalculatePixelMedian(int col_idx, int row_idx, int overlap_start,
+                                                             const std::vector<std::uint8_t> &local_data) const {
   const int radius = window_size_ / 2;
   std::vector<std::uint8_t> neighbors;
   neighbors.reserve(static_cast<std::size_t>(window_size_) * window_size_);
@@ -81,7 +85,7 @@ std::uint8_t VlasovaAImageSmoothingMPI::GetPixelMedian(int col_idx, int row_idx,
   }
 
   if (!neighbors.empty()) {
-    std::sort(neighbors.begin(), neighbors.end());
+    std::ranges::sort(neighbors);  // Используем ranges версию
     return neighbors[neighbors.size() / 2];
   }
 
@@ -153,7 +157,7 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
 
     for (int col_idx = 0; col_idx < width_; ++col_idx) {
       const std::size_t index = (static_cast<std::size_t>(local_row) * width_) + col_idx;
-      local_result[index] = GetPixelMedian(col_idx, global_row, overlap_start, local_image);
+      local_result[index] = CalculatePixelMedian(col_idx, global_row, overlap_start, local_image);
     }
   }
 
@@ -198,12 +202,10 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
 bool VlasovaAImageSmoothingMPI::PostProcessingImpl() {
   const auto &output = GetOutput();
 
-  // Заменили output.Empty() на прямой вызов
   if (output.data.empty()) {
     return false;
   }
 
-  // Заменили TotalPixels() на прямое вычисление
   const std::size_t expected_size = static_cast<std::size_t>(width_) * height_;
   return output.data.size() == expected_size;
 }

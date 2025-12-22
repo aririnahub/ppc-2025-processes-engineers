@@ -6,7 +6,7 @@
 
 namespace vlasova_a_image_smoothing {
 
-VlasovaAImageSmoothingSEQ::VlasovaAImageSmoothingSEQ(const InType &in) : window_size_(3) {
+VlasovaAImageSmoothingSEQ::VlasovaAImageSmoothingSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
 }
@@ -18,11 +18,11 @@ bool VlasovaAImageSmoothingSEQ::ValidationImpl() {
     return false;
   }
 
-  if (input.Empty()) {
+  if (input.data.empty()) {
     return false;
   }
 
-  const std::size_t expected_size = input.TotalPixels();
+  const std::size_t expected_size = static_cast<std::size_t>(input.width) * input.height;
   return input.data.size() == expected_size;
 }
 
@@ -51,7 +51,7 @@ bool VlasovaAImageSmoothingSEQ::RunImpl() {
           const int neighbor_y = row_idx + dy;
 
           if (neighbor_x >= 0 && neighbor_x < width_ && neighbor_y >= 0 && neighbor_y < height_) {
-            const std::size_t index = static_cast<std::size_t>(neighbor_y) * width_ + neighbor_x;
+            const std::size_t index = (static_cast<std::size_t>(neighbor_y) * width_) + neighbor_x;
             neighbors.push_back(input_image_[index]);
           }
         }
@@ -59,10 +59,10 @@ bool VlasovaAImageSmoothingSEQ::RunImpl() {
 
       if (!neighbors.empty()) {
         std::sort(neighbors.begin(), neighbors.end());
-        const std::size_t output_index = static_cast<std::size_t>(row_idx) * width_ + col_idx;
+        const std::size_t output_index = (static_cast<std::size_t>(row_idx) * width_) + col_idx;
         output_image_[output_index] = neighbors[neighbors.size() / 2];
       } else {
-        const std::size_t index = static_cast<std::size_t>(row_idx) * width_ + col_idx;
+        const std::size_t index = (static_cast<std::size_t>(row_idx) * width_) + col_idx;
         output_image_[index] = input_image_[index];
       }
     }
@@ -76,7 +76,7 @@ bool VlasovaAImageSmoothingSEQ::PostProcessingImpl() {
   GetOutput().height = height_;
   GetOutput().data = output_image_;
 
-  if (GetOutput().Empty()) {
+  if (GetOutput().data.empty()) {
     return false;
   }
 

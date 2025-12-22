@@ -38,7 +38,7 @@ class VlasovaARunFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType,
 
     for (int row_idx = 0; row_idx < height; ++row_idx) {
       for (int col_idx = 0; col_idx < width; ++col_idx) {
-        const std::size_t index = static_cast<std::size_t>(row_idx) * width + col_idx;
+        const std::size_t index = (static_cast<std::size_t>(row_idx) * width) + col_idx;
         const std::uint8_t gradient = static_cast<std::uint8_t>((col_idx + row_idx) * 2);
         input_data_.data[index] = gradient;
       }

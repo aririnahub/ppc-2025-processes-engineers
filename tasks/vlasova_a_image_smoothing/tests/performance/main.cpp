@@ -27,7 +27,8 @@ class VlasovaARunPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType>
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return output_data.width == input_data_.width && output_data.height == input_data_.height && !output_data.Empty();
+    return output_data.width == input_data_.width && output_data.height == input_data_.height &&
+           !output_data.data.empty();
   }
 
   InType GetTestInputData() final {

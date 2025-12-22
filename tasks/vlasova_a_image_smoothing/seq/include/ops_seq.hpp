@@ -8,7 +8,7 @@
 
 namespace vlasova_a_image_smoothing {
 
-class VlasovaAImageSmoothingSEQ : public BaseTask {
+class VlasovaAImageSmoothingSEQ : public ppc::task::Task<InType, OutType> {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;

@@ -17,8 +17,8 @@ class VlasovaAMatrixMultiplySEQ : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  void transposeMatrix(const SparseMatrixCCS &A, SparseMatrixCCS &AT);
-  void multiplyMatrices(const SparseMatrixCCS &A, const SparseMatrixCCS &B, SparseMatrixCCS &C);
+  void TransposeMatrix(const SparseMatrixCCS &a, SparseMatrixCCS &at);
+  void MultiplyMatrices(const SparseMatrixCCS &a, const SparseMatrixCCS &b, SparseMatrixCCS &c);
 };
 
 }  // namespace vlasova_a_matrix_multiply_ccs

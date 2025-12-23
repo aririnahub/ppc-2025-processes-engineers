@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <utility>
 
 #include "util/include/perf_test_util.hpp"
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"
@@ -11,7 +13,7 @@
 
 namespace vlasova_a_matrix_multiply_ccs {
 
-SparseMatrixCCS generateRandomSparseMatrix(int rows, int cols, double density) {
+SparseMatrixCCS GenerateRandomSparseMatrix(int rows, int cols, double density) {
   SparseMatrixCCS matrix;
   matrix.rows = rows;
   matrix.cols = cols;
@@ -48,16 +50,16 @@ SparseMatrixCCS generateRandomSparseMatrix(int rows, int cols, double density) {
   matrix.values.resize(total_nnz);
   matrix.row_indices.resize(total_nnz);
 
-  int current_idx = 0;
+  int current_index = 0;
   matrix.col_ptrs[0] = 0;
 
   for (int col = 0; col < cols; col++) {
     for (int i = 0; i < col_counts[col]; i++) {
-      matrix.values[current_idx] = col_values[col][i];
-      matrix.row_indices[current_idx] = col_rows[col][i];
-      current_idx++;
+      matrix.values[current_index] = col_values[col][i];
+      matrix.row_indices[current_index] = col_rows[col][i];
+      current_index++;
     }
-    matrix.col_ptrs[col + 1] = current_idx;
+    matrix.col_ptrs[col + 1] = current_index;
   }
 
   return matrix;
@@ -70,9 +72,9 @@ class VlasovaMatrixMultiplyPerfTest : public ppc::util::BaseRunPerfTests<InType,
 
     int size = 100;
     double density = 0.1;
-    A_ = generateRandomSparseMatrix(size, size, density);
-    B_ = generateRandomSparseMatrix(size, size, density);
-    input_data_ = std::make_pair(A_, B_);
+    a_ = GenerateRandomSparseMatrix(size, size, density);
+    b_ = GenerateRandomSparseMatrix(size, size, density);
+    input_data_ = std::make_pair(a_, b_);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
@@ -80,7 +82,7 @@ class VlasovaMatrixMultiplyPerfTest : public ppc::util::BaseRunPerfTests<InType,
       return true;
     }
 
-    return output_data.rows == A_.rows && output_data.cols == B_.cols &&
+    return output_data.rows == a_.rows && output_data.cols == b_.cols &&
            output_data.col_ptrs.size() == static_cast<size_t>(output_data.cols + 1);
   }
 
@@ -89,7 +91,7 @@ class VlasovaMatrixMultiplyPerfTest : public ppc::util::BaseRunPerfTests<InType,
   }
 
  private:
-  SparseMatrixCCS A_, B_;
+  SparseMatrixCCS a_, b_;
   InType input_data_;
 };
 

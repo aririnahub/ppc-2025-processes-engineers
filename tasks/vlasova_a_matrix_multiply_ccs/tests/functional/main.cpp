@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdlib>
 #include <ctime>
+#include <string>
 #include <tuple>
+#include <utility>
 
 #include "util/include/func_test_util.hpp"
 #include "util/include/util.hpp"
@@ -12,7 +16,7 @@
 
 namespace vlasova_a_matrix_multiply_ccs {
 
-SparseMatrixCCS generateRandomSparseMatrix(int rows, int cols, double density) {
+SparseMatrixCCS GenerateRandomSparseMatrix(int rows, int cols, double density) {
   SparseMatrixCCS matrix;
   matrix.rows = rows;
   matrix.cols = cols;
@@ -49,16 +53,16 @@ SparseMatrixCCS generateRandomSparseMatrix(int rows, int cols, double density) {
   matrix.values.resize(total_nnz);
   matrix.row_indices.resize(total_nnz);
 
-  int current_idx = 0;
+  int current_index = 0;
   matrix.col_ptrs[0] = 0;
 
   for (int col = 0; col < cols; col++) {
     for (int i = 0; i < col_counts[col]; i++) {
-      matrix.values[current_idx] = col_values[col][i];
-      matrix.row_indices[current_idx] = col_rows[col][i];
-      current_idx++;
+      matrix.values[current_index] = col_values[col][i];
+      matrix.row_indices[current_index] = col_rows[col][i];
+      current_index++;
     }
-    matrix.col_ptrs[col + 1] = current_idx;
+    matrix.col_ptrs[col + 1] = current_index;
   }
 
   return matrix;
@@ -78,17 +82,17 @@ class VlasovaMatrixMultiplyFuncTest : public ppc::util::BaseRunFuncTests<InType,
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     if (matrix_type == "small") {
-      A_ = generateRandomSparseMatrix(10, 10, 0.3);
-      B_ = generateRandomSparseMatrix(10, 10, 0.3);
+      a_ = GenerateRandomSparseMatrix(10, 10, 0.3);
+      b_ = GenerateRandomSparseMatrix(10, 10, 0.3);
     } else if (matrix_type == "medium") {
-      A_ = generateRandomSparseMatrix(50, 50, 0.1);
-      B_ = generateRandomSparseMatrix(50, 50, 0.1);
+      a_ = GenerateRandomSparseMatrix(50, 50, 0.1);
+      b_ = GenerateRandomSparseMatrix(50, 50, 0.1);
     } else {
-      A_ = generateRandomSparseMatrix(100, 100, 0.05);
-      B_ = generateRandomSparseMatrix(100, 100, 0.05);
+      a_ = GenerateRandomSparseMatrix(100, 100, 0.05);
+      b_ = GenerateRandomSparseMatrix(100, 100, 0.05);
     }
 
-    input_data_ = std::make_pair(A_, B_);
+    input_data_ = std::make_pair(a_, b_);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
@@ -96,7 +100,7 @@ class VlasovaMatrixMultiplyFuncTest : public ppc::util::BaseRunFuncTests<InType,
       return true;
     }
 
-    return output_data.rows == A_.rows && output_data.cols == B_.cols &&
+    return output_data.rows == a_.rows && output_data.cols == b_.cols &&
            output_data.col_ptrs.size() == static_cast<size_t>(output_data.cols + 1);
   }
   InType GetTestInputData() final {
@@ -104,7 +108,7 @@ class VlasovaMatrixMultiplyFuncTest : public ppc::util::BaseRunFuncTests<InType,
   }
 
  private:
-  SparseMatrixCCS A_, B_;
+  SparseMatrixCCS a_, b_;
   InType input_data_;
 };
 

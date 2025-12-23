@@ -32,8 +32,7 @@ class VlasovaARunFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType,
     input_data_.width = width;
     input_data_.height = height;
     input_data_.data.resize(static_cast<std::size_t>(width) * height);
-     
-  // 1. Основной градиент: (col + row) * 2
+
     for (int row_idx = 0; row_idx < height; ++row_idx) {
       for (int col_idx = 0; col_idx < width; ++col_idx) {
         const std::size_t index = (static_cast<std::size_t>(row_idx) * width) + col_idx;
@@ -41,7 +40,7 @@ class VlasovaARunFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType,
         input_data_.data[index] = gradient;
       }
     }
-     // 2. Шум "соль-перец"
+
     for (std::size_t counter = 0; counter < input_data_.data.size() / 20; ++counter) {
       const std::size_t index = (counter * 97) % input_data_.data.size();
       if (counter % 3 == 0) {

@@ -5,18 +5,15 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <numeric>
-#include <utility>
 #include <vector>
 
-#include "util/include/util.hpp"
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"
 
 namespace vlasova_a_matrix_multiply_ccs {
 
 namespace {
 constexpr double kEpsilon = 1e-10;
-}
+}  // namespace
 
 VlasovaAMatrixMultiplyMPI::VlasovaAMatrixMultiplyMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
@@ -77,7 +74,7 @@ std::pair<int, int> VlasovaAMatrixMultiplyMPI::SplitColumns(int total_cols, int 
   int base_cols = total_cols / size;
   int remainder = total_cols % size;
 
-  int start_col = rank * base_cols + std::min(rank, remainder);
+  int start_col = (rank * base_cols) + std::min(rank, remainder);
   int end_col = start_col + base_cols + (rank < remainder ? 1 : 0);
 
   return {start_col, end_col};
@@ -101,7 +98,7 @@ void VlasovaAMatrixMultiplyMPI::ExtractLocalColumns(const SparseMatrixCCS &b, in
       loc_row_ind.push_back(b.row_indices[i]);
     }
 
-    loc_col_ptr.push_back(loc_val.size());
+    loc_col_ptr.push_back(static_cast<int>(loc_val.size()));
   }
 }
 
@@ -126,9 +123,9 @@ void VlasovaAMatrixMultiplyMPI::MultiplyLocalMatrices(const SparseMatrixCCS &at,
       int row_b = loc_row_ind[k];
       double val_b = loc_val[k];
 
-      for (int l = at.col_ptrs[row_b]; l < at.col_ptrs[row_b + 1]; l++) {
-        int row_a = at.row_indices[l];
-        double val_a = at.values[l];
+      for (int idx = at.col_ptrs[row_b]; idx < at.col_ptrs[row_b + 1]; idx++) {
+        int row_a = at.row_indices[idx];
+        double val_a = at.values[idx];
 
         if (row_marker[row_a] != j) {
           row_marker[row_a] = j;
@@ -145,15 +142,15 @@ void VlasovaAMatrixMultiplyMPI::MultiplyLocalMatrices(const SparseMatrixCCS &at,
         res_row_ind.push_back(i);
       }
     }
-    res_col_ptr.push_back(res_val.size());
+    res_col_ptr.push_back(static_cast<int>(res_val.size()));
   }
 }
 
 bool VlasovaAMatrixMultiplyMPI::RunImpl() {
   const auto &[a, b] = GetInput();
 
-  int rank;
-  int size;
+  int rank = 0;
+  int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -169,7 +166,7 @@ bool VlasovaAMatrixMultiplyMPI::RunImpl() {
   MPI_Bcast(&at.cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
-    at.nnz = at.values.size();
+    at.nnz = static_cast<int>(at.values.size());
   }
   MPI_Bcast(&at.nnz, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -213,8 +210,8 @@ bool VlasovaAMatrixMultiplyMPI::RunImpl() {
     all_col_ptrs[0] = loc_res_col_ptr;
 
     for (int src = 1; src < size; src++) {
-      int src_nnz;
-      int src_cols;
+      int src_nnz = 0;
+      int src_cols = 0;
       MPI_Recv(&src_nnz, 1, MPI_INT, src, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       MPI_Recv(&src_cols, 1, MPI_INT, src, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
@@ -238,8 +235,8 @@ bool VlasovaAMatrixMultiplyMPI::RunImpl() {
 
     for (int i = 0; i < size; i++) {
       if (i > 0) {
-        value_offsets[i] = value_offsets[i - 1] + all_values[i - 1].size();
-        col_offsets[i] = col_offsets[i - 1] + (all_col_ptrs[i - 1].size() - 1);
+        value_offsets[i] = value_offsets[i - 1] + static_cast<int>(all_values[i - 1].size());
+        col_offsets[i] = col_offsets[i - 1] + static_cast<int>(all_col_ptrs[i - 1].size() - 1);
       }
     }
 
@@ -252,19 +249,21 @@ bool VlasovaAMatrixMultiplyMPI::RunImpl() {
       }
     }
 
-    c.nnz = c.values.size();
+    c.nnz = static_cast<int>(c.values.size());
     GetOutput() = c;
 
-  } else {
-    int local_nnz = loc_res_val.size();
-    int local_cols = loc_cols;
-
-    MPI_Send(&local_nnz, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    MPI_Send(&local_cols, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
-    MPI_Send(loc_res_val.data(), local_nnz, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
-    MPI_Send(loc_res_row_ind.data(), local_nnz, MPI_INT, 0, 3, MPI_COMM_WORLD);
-    MPI_Send(loc_res_col_ptr.data(), loc_cols + 1, MPI_INT, 0, 4, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+    return true;
   }
+
+  int local_nnz = static_cast<int>(loc_res_val.size());
+  int local_cols = loc_cols;
+
+  MPI_Send(&local_nnz, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+  MPI_Send(&local_cols, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+  MPI_Send(loc_res_val.data(), local_nnz, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
+  MPI_Send(loc_res_row_ind.data(), local_nnz, MPI_INT, 0, 3, MPI_COMM_WORLD);
+  MPI_Send(loc_res_col_ptr.data(), loc_cols + 1, MPI_INT, 0, 4, MPI_COMM_WORLD);
 
   MPI_Barrier(MPI_COMM_WORLD);
   return true;
@@ -274,13 +273,13 @@ bool VlasovaAMatrixMultiplyMPI::PostProcessingImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  const auto &c = GetOutput();
+
   if (rank == 0) {
-    const auto &c = GetOutput();
     return c.rows > 0 && c.cols > 0 && c.col_ptrs.size() == static_cast<size_t>(c.cols + 1);
-  } else {
-    const auto &c = GetOutput();
-    return c.rows == 0 && c.cols == 0;
   }
+
+  return c.rows == 0 && c.cols == 0;
 }
 
 }  // namespace vlasova_a_matrix_multiply_ccs

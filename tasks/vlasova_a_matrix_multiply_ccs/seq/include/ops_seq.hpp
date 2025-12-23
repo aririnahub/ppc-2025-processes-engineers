@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 
 #include "task/include/task.hpp"
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"
@@ -17,8 +18,8 @@ class VlasovaAMatrixMultiplySEQ : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  void TransposeMatrix(const SparseMatrixCCS &a, SparseMatrixCCS &at);
-  void MultiplyMatrices(const SparseMatrixCCS &a, const SparseMatrixCCS &b, SparseMatrixCCS &c);
+  static void TransposeMatrix(const SparseMatrixCCS &a, SparseMatrixCCS &at);
+  static void MultiplyMatrices(const SparseMatrixCCS &a, const SparseMatrixCCS &b, SparseMatrixCCS &c);
 };
 
 }  // namespace vlasova_a_matrix_multiply_ccs

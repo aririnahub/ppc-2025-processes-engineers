@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
-#include <cstdlib>
-#include <ctime>
-#include <fstream>
+#include <random>
 #include <utility>
 
 #include "util/include/perf_test_util.hpp"
@@ -19,11 +17,10 @@ SparseMatrixCCS GenerateRandomSparseMatrix(int rows, int cols, double density) {
   matrix.cols = cols;
   matrix.col_ptrs.resize(cols + 1, 0);
 
-  static bool initialized = false;
-  if (!initialized) {
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
-    initialized = true;
-  }
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+  static std::uniform_real_distribution<> dis_value(0.1, 10.0);
+  static std::uniform_real_distribution<> dis_random(0.0, 1.0);
 
   std::vector<int> col_counts(cols, 0);
   std::vector<std::vector<double>> col_values(cols);
@@ -33,10 +30,10 @@ SparseMatrixCCS GenerateRandomSparseMatrix(int rows, int cols, double density) {
 
   for (int col = 0; col < cols; col++) {
     for (int row = 0; row < rows; row++) {
-      double random_value = static_cast<double>(std::rand()) / RAND_MAX;
+      double random_value = dis_random(gen);
 
       if (random_value < density) {
-        double value = 0.1 + static_cast<double>(std::rand()) / RAND_MAX * 9.9;
+        double value = dis_value(gen);
 
         col_values[col].push_back(value);
         col_rows[col].push_back(row);
@@ -68,8 +65,6 @@ SparseMatrixCCS GenerateRandomSparseMatrix(int rows, int cols, double density) {
 class VlasovaMatrixMultiplyPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
   void SetUp() override {
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
     int size = 100;
     double density = 0.1;
     a_ = GenerateRandomSparseMatrix(size, size, density);

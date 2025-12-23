@@ -1,5 +1,6 @@
 #pragma once
 
+#include <random>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -24,7 +25,7 @@ using TestType = std::tuple<int, std::string>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
 SparseMatrixCCS GenerateRandomSparseMatrix(int rows, int cols, double density);
-bool CompareMatrices(const SparseMatrixCCS &a, const SparseMatrixCCS &b, double kEpsilon = 1e-6);
+bool CompareMatrices(const SparseMatrixCCS &a, const SparseMatrixCCS &b, double k_epsilon = 1e-6);
 
 void TransposeMatrixCCS(const SparseMatrixCCS &a, SparseMatrixCCS &at);
 

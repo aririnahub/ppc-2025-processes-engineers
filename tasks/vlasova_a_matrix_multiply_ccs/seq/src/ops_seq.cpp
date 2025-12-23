@@ -1,19 +1,17 @@
 #include "vlasova_a_matrix_multiply_ccs/seq/include/ops_seq.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <stdexcept>
+#include <exception>
 #include <vector>
 
-#include "util/include/util.hpp"
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"
 
 namespace vlasova_a_matrix_multiply_ccs {
 
 namespace {
 constexpr double kEpsilon = 1e-10;
-}
+}  // namespace
 
 VlasovaAMatrixMultiplySEQ::VlasovaAMatrixMultiplySEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
@@ -87,9 +85,9 @@ void VlasovaAMatrixMultiplySEQ::MultiplyMatrices(const SparseMatrixCCS &a, const
       int row_b = b.row_indices[k];
       double val_b = b.values[k];
 
-      for (int l = at.col_ptrs[row_b]; l < at.col_ptrs[row_b + 1]; l++) {
-        int row_a = at.row_indices[l];
-        double val_a = at.values[l];
+      for (int idx = at.col_ptrs[row_b]; idx < at.col_ptrs[row_b + 1]; idx++) {
+        int row_a = at.row_indices[idx];
+        double val_a = at.values[idx];
 
         if (row_marker[row_a] != j) {
           row_marker[row_a] = j;
@@ -106,10 +104,10 @@ void VlasovaAMatrixMultiplySEQ::MultiplyMatrices(const SparseMatrixCCS &a, const
         c.row_indices.push_back(i);
       }
     }
-    c.col_ptrs.push_back(c.values.size());
+    c.col_ptrs.push_back(static_cast<int>(c.values.size()));
   }
 
-  c.nnz = c.values.size();
+  c.nnz = static_cast<int>(c.values.size());
 }
 
 bool VlasovaAMatrixMultiplySEQ::RunImpl() {

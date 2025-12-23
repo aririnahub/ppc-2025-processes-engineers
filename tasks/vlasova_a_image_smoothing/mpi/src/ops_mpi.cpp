@@ -12,9 +12,8 @@
 
 namespace vlasova_a_image_smoothing {
 
-namespace {  // Анонимный namespace вместо static
+namespace {
 
-// Вспомогательная функция для вычисления медианы
 std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_start,
                                 const std::vector<std::uint8_t> &local_data, int width, int height, int window_size) {
   const int radius = window_size / 2;
@@ -44,7 +43,6 @@ std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_start,
   return local_data[index];
 }
 
-// Вспомогательная функция для распределения данных
 void PrepareScatterData(int size, int width, int height, int radius, std::vector<int> &sendcounts,
                         std::vector<int> &displs) {
   const int base_rows = height / size;
@@ -66,7 +64,6 @@ void PrepareScatterData(int size, int width, int height, int radius, std::vector
   }
 }
 
-// Вспомогательная функция для сбора данных
 void PrepareGatherData(int size, int width, int height, std::vector<int> &sendcounts, std::vector<int> &displs) {
   const int base_rows = height / size;
   const int extra_rows = height % size;
@@ -143,7 +140,6 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
   const int base_rows = height_ / size;
   const int extra_rows = height_ % size;
 
-  // Вычисляем границы для текущего процесса
   const int start_row = (rank * base_rows) + std::min(rank, extra_rows);
   const int end_row = start_row + base_rows + (rank < extra_rows ? 1 : 0);
   const int local_height = end_row - start_row;
@@ -155,12 +151,10 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
     return true;
   }
 
-  // Вычисляем перекрытие для соседних пикселей
   const int overlap_start = std::max(0, start_row - radius);
   const int overlap_end = std::min(height_, end_row + radius);
   const int overlap_height = overlap_end - overlap_start;
 
-  // Подготовка данных для scatter
   std::vector<std::uint8_t> full_image;
   if (rank == 0) {
     full_image = GetInput().data;
@@ -173,12 +167,10 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
     PrepareScatterData(size, width_, height_, radius, sendcounts, displs);
   }
 
-  // Раздача данных по процессам
   std::vector<std::uint8_t> local_image(static_cast<std::size_t>(overlap_height) * width_);
   MPI_Scatterv((rank == 0 ? full_image.data() : nullptr), sendcounts.data(), displs.data(), MPI_UNSIGNED_CHAR,
                local_image.data(), overlap_height * width_, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
-  // Обработка локальных данных
   std::vector<std::uint8_t> local_result(static_cast<std::size_t>(local_height) * width_);
   for (int local_row = 0; local_row < local_height; ++local_row) {
     const int global_row = start_row + local_row;
@@ -190,7 +182,6 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
     }
   }
 
-  // Подготовка для сбора результатов
   std::vector<std::uint8_t> result_image;
   if (rank == 0) {
     result_image.resize(static_cast<std::size_t>(width_) * height_);
@@ -200,12 +191,10 @@ bool VlasovaAImageSmoothingMPI::RunImpl() {
     PrepareGatherData(size, width_, height_, sendcounts, displs);
   }
 
-  // Сбор результатов
   MPI_Gatherv(local_result.data(), local_height * width_, MPI_UNSIGNED_CHAR,
               (rank == 0 ? result_image.data() : nullptr), sendcounts.data(), displs.data(), MPI_UNSIGNED_CHAR, 0,
               MPI_COMM_WORLD);
 
-  // Распространение результата на все процессы
   if (rank == 0) {
     GetOutput().width = width_;
     GetOutput().height = height_;

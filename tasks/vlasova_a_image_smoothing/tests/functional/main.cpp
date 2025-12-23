@@ -59,12 +59,6 @@ class VlasovaARunFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType,
       return false;
     }
 
-    for (const auto &pixel : output_data.data) {
-      if (pixel > 255) {
-        return false;
-      }
-    }
-
     const std::uint8_t first = output_data.data[0];
     for (std::size_t idx = 1; idx < output_data.data.size(); ++idx) {
       if (output_data.data[idx] != first) {

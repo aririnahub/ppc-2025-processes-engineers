@@ -66,7 +66,7 @@ SparseMatrixCCS GenerateRandomSparseMatrix(int rows, int cols, double density) {
 class VlasovaMatrixMultiplyPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
   void SetUp() override {
-    int size = 100;
+    int size = 2000;
     double density = 0.1;
     a_ = GenerateRandomSparseMatrix(size, size, density);
     b_ = GenerateRandomSparseMatrix(size, size, density);

@@ -92,7 +92,7 @@ void ProcessColumnSEQ(const SparseMatrixCCS &at, const SparseMatrixCCS &b, int c
   for (size_t i = 0; i < temp_row.size(); i++) {
     if (row_marker[i] == col_index && std::abs(temp_row[i]) > kEpsilon) {
       res_val.push_back(temp_row[i]);
-      res_row_ind.push_back(i);
+      res_row_ind.push_back(static_cast<int>(i));
     }
   }
 }

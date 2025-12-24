@@ -81,6 +81,39 @@ std::pair<int, int> VlasovaAMatrixMultiplyMPI::SplitColumns(int total_cols, int 
   return {start_col, end_col};
 }
 
+void VlasovaAMatrixMultiplyMPI::ProcessLocalColumn(const SparseMatrixCCS &at, const std::vector<double> &loc_val,
+                                                   const std::vector<int> &loc_row_ind,
+                                                   const std::vector<int> &loc_col_ptr, int col_index,
+                                                   std::vector<double> &temp_row, std::vector<int> &row_marker,
+                                                   std::vector<double> &res_val, std::vector<int> &res_row_ind) {
+  int col_start = loc_col_ptr[col_index];
+  int col_end = loc_col_ptr[col_index + 1];
+
+  for (int k = col_start; k < col_end; k++) {
+    int row_b = loc_row_ind[k];
+    double val_b = loc_val[k];
+
+    for (int idx = at.col_ptrs[row_b]; idx < at.col_ptrs[row_b + 1]; idx++) {
+      int row_a = at.row_indices[idx];
+      double val_a = at.values[idx];
+
+      if (row_marker[row_a] != col_index) {
+        row_marker[row_a] = col_index;
+        temp_row[row_a] = val_a * val_b;
+      } else {
+        temp_row[row_a] += val_a * val_b;
+      }
+    }
+  }
+
+  for (int i = 0; i < at.cols; i++) {
+    if (row_marker[i] == col_index && std::abs(temp_row[i]) > kEpsilon) {
+      res_val.push_back(temp_row[i]);
+      res_row_ind.push_back(i);
+    }
+  }
+}
+
 void VlasovaAMatrixMultiplyMPI::ExtractLocalColumns(const SparseMatrixCCS &b, int start_col, int end_col,
                                                     std::vector<double> &loc_val, std::vector<int> &loc_row_ind,
                                                     std::vector<int> &loc_col_ptr) {
@@ -117,34 +150,88 @@ void VlasovaAMatrixMultiplyMPI::MultiplyLocalMatrices(const SparseMatrixCCS &at,
   std::vector<int> row_marker(at.cols, -1);
 
   for (int j = 0; j < loc_cols; j++) {
-    int col_start = loc_col_ptr[j];
-    int col_end = loc_col_ptr[j + 1];
-
-    for (int k = col_start; k < col_end; k++) {
-      int row_b = loc_row_ind[k];
-      double val_b = loc_val[k];
-
-      for (int idx = at.col_ptrs[row_b]; idx < at.col_ptrs[row_b + 1]; idx++) {
-        int row_a = at.row_indices[idx];
-        double val_a = at.values[idx];
-
-        if (row_marker[row_a] != j) {
-          row_marker[row_a] = j;
-          temp_row[row_a] = val_a * val_b;
-        } else {
-          temp_row[row_a] += val_a * val_b;
-        }
-      }
-    }
-
-    for (int i = 0; i < at.cols; i++) {
-      if (row_marker[i] == j && std::abs(temp_row[i]) > kEpsilon) {
-        res_val.push_back(temp_row[i]);
-        res_row_ind.push_back(i);
-      }
-    }
+    ProcessLocalColumn(at, loc_val, loc_row_ind, loc_col_ptr, j, temp_row, row_marker, res_val, res_row_ind);
     res_col_ptr.push_back(static_cast<int>(res_val.size()));
   }
+}
+
+bool VlasovaAMatrixMultiplyMPI::ProcessRootRank(const SparseMatrixCCS &a, const SparseMatrixCCS &b,
+                                                const std::vector<double> &loc_res_val,
+                                                const std::vector<int> &loc_res_row_ind,
+                                                const std::vector<int> &loc_res_col_ptr, int size) {
+  SparseMatrixCCS c;
+  c.rows = a.rows;
+  c.cols = b.cols;
+
+  std::vector<std::vector<double>> all_values(size);
+  std::vector<std::vector<int>> all_row_indices(size);
+  std::vector<std::vector<int>> all_col_ptrs(size);
+
+  all_values[0] = loc_res_val;
+  all_row_indices[0] = loc_res_row_ind;
+  all_col_ptrs[0] = loc_res_col_ptr;
+
+  for (int src = 1; src < size; src++) {
+    int src_nnz = 0;
+    int src_cols = 0;
+    MPI_Recv(&src_nnz, 1, MPI_INT, src, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(&src_cols, 1, MPI_INT, src, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    std::vector<double> src_vals(src_nnz);
+    std::vector<int> src_rows(src_nnz);
+    std::vector<int> src_ptrs(src_cols + 1);
+
+    MPI_Recv(src_vals.data(), src_nnz, MPI_DOUBLE, src, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(src_rows.data(), src_nnz, MPI_INT, src, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(src_ptrs.data(), src_cols + 1, MPI_INT, src, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    all_values[src] = std::move(src_vals);
+    all_row_indices[src] = std::move(src_rows);
+    all_col_ptrs[src] = std::move(src_ptrs);
+  }
+
+  c.col_ptrs.push_back(0);
+
+  std::vector<int> value_offsets(size, 0);
+  std::vector<int> col_offsets(size, 0);
+
+  for (int i = 0; i < size; i++) {
+    if (i > 0) {
+      value_offsets[i] = value_offsets[i - 1] + static_cast<int>(all_values[i - 1].size());
+      col_offsets[i] = col_offsets[i - 1] + static_cast<int>(all_col_ptrs[i - 1].size() - 1);
+    }
+  }
+
+  for (int i = 0; i < size; i++) {
+    c.values.insert(c.values.end(), all_values[i].begin(), all_values[i].end());
+    c.row_indices.insert(c.row_indices.end(), all_row_indices[i].begin(), all_row_indices[i].end());
+
+    for (size_t j = 1; j < all_col_ptrs[i].size(); j++) {
+      c.col_ptrs.push_back(all_col_ptrs[i][j] + value_offsets[i]);
+    }
+  }
+
+  c.nnz = static_cast<int>(c.values.size());
+  GetOutput() = c;
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  return true;
+}
+
+bool VlasovaAMatrixMultiplyMPI::ProcessWorkerRank(const std::vector<double> &loc_res_val,
+                                                  const std::vector<int> &loc_res_row_ind,
+                                                  const std::vector<int> &loc_res_col_ptr, int loc_cols) {
+  int local_nnz = static_cast<int>(loc_res_val.size());
+  int local_cols = loc_cols;
+
+  MPI_Send(&local_nnz, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+  MPI_Send(&local_cols, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+  MPI_Send(loc_res_val.data(), local_nnz, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
+  MPI_Send(loc_res_row_ind.data(), local_nnz, MPI_INT, 0, 3, MPI_COMM_WORLD);
+  MPI_Send(loc_res_col_ptr.data(), loc_cols + 1, MPI_INT, 0, 4, MPI_COMM_WORLD);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  return true;
 }
 
 bool VlasovaAMatrixMultiplyMPI::RunImpl() {
@@ -198,76 +285,10 @@ bool VlasovaAMatrixMultiplyMPI::RunImpl() {
                         loc_res_col_ptr);
 
   if (rank == 0) {
-    SparseMatrixCCS c;
-    c.rows = a.rows;
-    c.cols = b.cols;
-
-    std::vector<std::vector<double>> all_values(size);
-    std::vector<std::vector<int>> all_row_indices(size);
-    std::vector<std::vector<int>> all_col_ptrs(size);
-
-    all_values[0] = loc_res_val;
-    all_row_indices[0] = loc_res_row_ind;
-    all_col_ptrs[0] = loc_res_col_ptr;
-
-    for (int src = 1; src < size; src++) {
-      int src_nnz = 0;
-      int src_cols = 0;
-      MPI_Recv(&src_nnz, 1, MPI_INT, src, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      MPI_Recv(&src_cols, 1, MPI_INT, src, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      std::vector<double> src_vals(src_nnz);
-      std::vector<int> src_rows(src_nnz);
-      std::vector<int> src_ptrs(src_cols + 1);
-
-      MPI_Recv(src_vals.data(), src_nnz, MPI_DOUBLE, src, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      MPI_Recv(src_rows.data(), src_nnz, MPI_INT, src, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      MPI_Recv(src_ptrs.data(), src_cols + 1, MPI_INT, src, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      all_values[src] = std::move(src_vals);
-      all_row_indices[src] = std::move(src_rows);
-      all_col_ptrs[src] = std::move(src_ptrs);
-    }
-
-    c.col_ptrs.push_back(0);
-
-    std::vector<int> value_offsets(size, 0);
-    std::vector<int> col_offsets(size, 0);
-
-    for (int i = 0; i < size; i++) {
-      if (i > 0) {
-        value_offsets[i] = value_offsets[i - 1] + static_cast<int>(all_values[i - 1].size());
-        col_offsets[i] = col_offsets[i - 1] + static_cast<int>(all_col_ptrs[i - 1].size() - 1);
-      }
-    }
-
-    for (int i = 0; i < size; i++) {
-      c.values.insert(c.values.end(), all_values[i].begin(), all_values[i].end());
-      c.row_indices.insert(c.row_indices.end(), all_row_indices[i].begin(), all_row_indices[i].end());
-
-      for (size_t j = 1; j < all_col_ptrs[i].size(); j++) {
-        c.col_ptrs.push_back(all_col_ptrs[i][j] + value_offsets[i]);
-      }
-    }
-
-    c.nnz = static_cast<int>(c.values.size());
-    GetOutput() = c;
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    return true;
+    return ProcessRootRank(a, b, loc_res_val, loc_res_row_ind, loc_res_col_ptr, size);
   }
 
-  int local_nnz = static_cast<int>(loc_res_val.size());
-  int local_cols = loc_cols;
-
-  MPI_Send(&local_nnz, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-  MPI_Send(&local_cols, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
-  MPI_Send(loc_res_val.data(), local_nnz, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);
-  MPI_Send(loc_res_row_ind.data(), local_nnz, MPI_INT, 0, 3, MPI_COMM_WORLD);
-  MPI_Send(loc_res_col_ptr.data(), loc_cols + 1, MPI_INT, 0, 4, MPI_COMM_WORLD);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  return true;
+  return ProcessWorkerRank(loc_res_val, loc_res_row_ind, loc_res_col_ptr, loc_cols);
 }
 
 bool VlasovaAMatrixMultiplyMPI::PostProcessingImpl() {

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "task/include/task.hpp"
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"
 
@@ -26,6 +29,14 @@ class VlasovaAMatrixMultiplyMPI : public BaseTask {
                                     const std::vector<int> &loc_row_ind, const std::vector<int> &loc_col_ptr,
                                     int loc_cols, std::vector<double> &res_val, std::vector<int> &res_row_ind,
                                     std::vector<int> &res_col_ptr);
+  bool ProcessRootRank(const SparseMatrixCCS &a, const SparseMatrixCCS &b, const std::vector<double> &loc_res_val,
+                       const std::vector<int> &loc_res_row_ind, const std::vector<int> &loc_res_col_ptr, int size);
+  static bool ProcessWorkerRank(const std::vector<double> &loc_res_val, const std::vector<int> &loc_res_row_ind,
+                                const std::vector<int> &loc_res_col_ptr, int loc_cols);
+  static void ProcessLocalColumn(const SparseMatrixCCS &at, const std::vector<double> &loc_val,
+                                 const std::vector<int> &loc_row_ind, const std::vector<int> &loc_col_ptr,
+                                 int col_index, std::vector<double> &temp_row, std::vector<int> &row_marker,
+                                 std::vector<double> &res_val, std::vector<int> &res_row_ind);
 };
 
 }  // namespace vlasova_a_matrix_multiply_ccs

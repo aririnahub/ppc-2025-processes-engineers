@@ -59,8 +59,9 @@ bool VlasovaAImageSmoothingSEQ::RunImpl() {
     }
 
     if (!neighbors.empty()) {
-      std::sort(neighbors.begin(), neighbors.end());  // NOLINT
-      return neighbors[neighbors.size() / 2];
+      auto middle = neighbors.begin() + neighbors.size() / 2;
+      std::nth_element(neighbors.begin(), middle, neighbors.end());
+      return *middle;
     }
 
     const std::size_t index = (static_cast<std::size_t>(row_idx) * width_) + col_idx;

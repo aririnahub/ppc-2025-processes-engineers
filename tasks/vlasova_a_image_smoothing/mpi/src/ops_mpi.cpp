@@ -34,8 +34,9 @@ std::uint8_t ComputePixelMedian(int col_idx, int row_idx, int overlap_start,
   }
 
   if (!neighbors.empty()) {
-    std::ranges::sort(neighbors);
-    return neighbors[neighbors.size() / 2];
+    auto middle = neighbors.begin() + neighbors.size() / 2;
+    std::nth_element(neighbors.begin(), middle, neighbors.end());
+    return *middle;
   }
 
   const int local_row = row_idx - overlap_start;

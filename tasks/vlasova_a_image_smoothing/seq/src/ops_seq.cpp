@@ -59,7 +59,7 @@ bool VlasovaAImageSmoothingSEQ::RunImpl() {
     }
 
     if (!neighbors.empty()) {
-      auto middle = neighbors.begin() + neighbors.size() / 2;
+      auto middle = neighbors.begin() + static_cast<std::size_t>(neighbors.size()) / 2;
       std::nth_element(neighbors.begin(), middle, neighbors.end());
       return *middle;
     }

@@ -156,9 +156,8 @@ void VlasovaAMatrixMultiplyMPI::MultiplyLocalMatrices(const SparseMatrixCCS &at,
 }
 
 bool VlasovaAMatrixMultiplyMPI::ProcessRootRank(const SparseMatrixCCS &a, const SparseMatrixCCS &b,
-                                                const std::vector<double> loc_res_val,
-                                                const std::vector<int> loc_res_row_ind,
-                                                const std::vector<int> loc_res_col_ptr, int size) {
+                                                std::vector<double> &loc_res_val, std::vector<int> &loc_res_row_ind,
+                                                std::vector<int> &loc_res_col_ptr, int size) {
   SparseMatrixCCS c;
   c.rows = a.rows;
   c.cols = b.cols;

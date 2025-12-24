@@ -1,6 +1,4 @@
 #pragma once
-#include <utility>
-#include <vector>
 
 #include "task/include/task.hpp"
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"

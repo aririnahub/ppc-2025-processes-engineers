@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <random>
 #include <utility>
+#include <vector>
 
 #include "util/include/perf_test_util.hpp"
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"
@@ -78,7 +79,7 @@ class VlasovaMatrixMultiplyPerfTest : public ppc::util::BaseRunPerfTests<InType,
     }
 
     return output_data.rows == a_.rows && output_data.cols == b_.cols &&
-           output_data.col_ptrs.size() == static_cast<size_t>(output_data.cols + 1);
+           output_data.col_ptrs.size() == static_cast<size_t>(output_data.cols) + 1;
   }
 
   InType GetTestInputData() final {

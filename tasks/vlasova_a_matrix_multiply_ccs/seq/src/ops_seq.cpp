@@ -68,6 +68,37 @@ void VlasovaAMatrixMultiplySEQ::TransposeMatrix(const SparseMatrixCCS &a, Sparse
   }
 }
 
+namespace {
+
+void ProcessColumnSEQ(const SparseMatrixCCS &at, const SparseMatrixCCS &b, int col_index, std::vector<double> &temp_row,
+                      std::vector<int> &row_marker, std::vector<double> &res_val, std::vector<int> &res_row_ind) {
+  for (int k = b.col_ptrs[col_index]; k < b.col_ptrs[col_index + 1]; k++) {
+    int row_b = b.row_indices[k];
+    double val_b = b.values[k];
+
+    for (int idx = at.col_ptrs[row_b]; idx < at.col_ptrs[row_b + 1]; idx++) {
+      int row_a = at.row_indices[idx];
+      double val_a = at.values[idx];
+
+      if (row_marker[row_a] != col_index) {
+        row_marker[row_a] = col_index;
+        temp_row[row_a] = val_a * val_b;
+      } else {
+        temp_row[row_a] += val_a * val_b;
+      }
+    }
+  }
+
+  for (int i = 0; i < static_cast<int>(temp_row.size()); i++) {
+    if (row_marker[i] == col_index && std::abs(temp_row[i]) > kEpsilon) {
+      res_val.push_back(temp_row[i]);
+      res_row_ind.push_back(i);
+    }
+  }
+}
+
+}  // namespace
+
 void VlasovaAMatrixMultiplySEQ::MultiplyMatrices(const SparseMatrixCCS &a, const SparseMatrixCCS &b,
                                                  SparseMatrixCCS &c) {
   SparseMatrixCCS at;
@@ -81,29 +112,7 @@ void VlasovaAMatrixMultiplySEQ::MultiplyMatrices(const SparseMatrixCCS &a, const
   std::vector<int> row_marker(c.rows, -1);
 
   for (int j = 0; j < b.cols; j++) {
-    for (int k = b.col_ptrs[j]; k < b.col_ptrs[j + 1]; k++) {
-      int row_b = b.row_indices[k];
-      double val_b = b.values[k];
-
-      for (int idx = at.col_ptrs[row_b]; idx < at.col_ptrs[row_b + 1]; idx++) {
-        int row_a = at.row_indices[idx];
-        double val_a = at.values[idx];
-
-        if (row_marker[row_a] != j) {
-          row_marker[row_a] = j;
-          temp_row[row_a] = val_a * val_b;
-        } else {
-          temp_row[row_a] += val_a * val_b;
-        }
-      }
-    }
-
-    for (int i = 0; i < c.rows; i++) {
-      if (row_marker[i] == j && std::abs(temp_row[i]) > kEpsilon) {
-        c.values.push_back(temp_row[i]);
-        c.row_indices.push_back(i);
-      }
-    }
+    ProcessColumnSEQ(at, b, j, temp_row, row_marker, c.values, c.row_indices);
     c.col_ptrs.push_back(static_cast<int>(c.values.size()));
   }
 
@@ -125,7 +134,7 @@ bool VlasovaAMatrixMultiplySEQ::RunImpl() {
 
 bool VlasovaAMatrixMultiplySEQ::PostProcessingImpl() {
   const auto &c = GetOutput();
-  return c.rows > 0 && c.cols > 0 && c.col_ptrs.size() == static_cast<size_t>(c.cols + 1);
+  return c.rows > 0 && c.cols > 0 && c.col_ptrs.size() == static_cast<size_t>(c.cols) + 1;
 }
 
 }  // namespace vlasova_a_matrix_multiply_ccs

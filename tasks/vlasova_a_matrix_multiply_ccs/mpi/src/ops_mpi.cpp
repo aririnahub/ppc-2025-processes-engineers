@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "vlasova_a_matrix_multiply_ccs/common/include/common.hpp"
@@ -276,7 +277,7 @@ bool VlasovaAMatrixMultiplyMPI::PostProcessingImpl() {
   const auto &c = GetOutput();
 
   if (rank == 0) {
-    return c.rows > 0 && c.cols > 0 && c.col_ptrs.size() == static_cast<size_t>(c.cols + 1);
+    return c.rows > 0 && c.cols > 0 && c.col_ptrs.size() == static_cast<size_t>(c.cols) + 1;
   }
 
   return c.rows == 0 && c.cols == 0;

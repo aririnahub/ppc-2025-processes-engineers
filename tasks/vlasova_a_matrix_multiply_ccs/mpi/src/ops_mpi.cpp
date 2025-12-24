@@ -167,9 +167,9 @@ bool VlasovaAMatrixMultiplyMPI::ProcessRootRank(const SparseMatrixCCS &a, const 
   std::vector<std::vector<int>> all_row_indices(size);
   std::vector<std::vector<int>> all_col_ptrs(size);
 
-  all_values[0] = loc_res_val;
-  all_row_indices[0] = loc_res_row_ind;
-  all_col_ptrs[0] = loc_res_col_ptr;
+  all_values[0] = std::move(loc_res_val);
+  all_row_indices[0] = std::move(loc_res_row_ind);
+  all_col_ptrs[0] = std::move(loc_res_col_ptr);
 
   for (int src = 1; src < size; src++) {
     int src_nnz = 0;
